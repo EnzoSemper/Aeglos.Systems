@@ -147,6 +147,10 @@ class BlueSkyCollector:
                     self._post_to_raw(item["post"], account)
                     for item in data.get("feed", [])
                     if "post" in item
+                    # Skip reposts — author must be the monitored handle itself.
+                    # Reposts surface whoever the account boosts, pulling in
+                    # off-topic content (job listings, personal posts, etc.)
+                    and item["post"].get("author", {}).get("handle") == handle
                 ]
         except Exception as exc:
             logger.debug("BlueSky feed error for %s: %s", handle, exc)

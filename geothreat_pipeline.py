@@ -128,15 +128,12 @@ def _kw_match(keyword: str, lower_text: str) -> bool:
     """
     Match keyword against text.
     - Multi-word phrases: simple substring (e.g. "south china sea")
-    - Short single words (≤4 chars, e.g. "pla", "drc", "uae"): whole-word only
-      to prevent false positives like "pla" inside "implantation"
-    - Longer single words: simple substring (fast, few false positives)
+    - Single words: whole-word boundary match only, preventing substrings
+      like "kills" matching "skills" or "pla" inside "implantation"
     """
     if " " in keyword:
         return keyword in lower_text
-    if len(keyword) <= 4:
-        return bool(_re.search(r"\b" + _re.escape(keyword) + r"\b", lower_text))
-    return keyword in lower_text
+    return bool(_re.search(r"\b" + _re.escape(keyword) + r"\b", lower_text))
 
 
 def _classify_region(
@@ -200,11 +197,31 @@ _CONF_BANDS: dict[str, tuple[float, float]] = {
     "search":     (0.10, 0.35),   # BlueSky keyword search results
 }
 
+# Minimum banded confidence required to retain a severity label.
+# Prevents a single ambiguous keyword match on a social/osint source
+# from surfacing as CRITICAL or HIGH. Severity is downgraded if unmet.
+_SEVERITY_MIN_CONF: dict[str, float] = {
+    "critical": 0.45,
+    "high":     0.35,
+}
+
 
 def _apply_confidence_band(raw_conf: float, category: str) -> float:
     """Scale keyword-match confidence into the source-type band."""
     lo, hi = _CONF_BANDS.get(category, (0.30, 0.60))
     return round(lo + raw_conf * (hi - lo), 4)
+
+
+def _enforce_severity_floor(severity: str, confidence: float) -> str:
+    """
+    Downgrade severity if banded confidence is below the minimum required
+    for that label. Prevents low-confidence social posts from surfacing as
+    CRITICAL or HIGH on a single keyword match.
+    """
+    min_conf = _SEVERITY_MIN_CONF.get(severity)
+    if min_conf is not None and confidence < min_conf:
+        return "high" if severity == "critical" else "moderate"
+    return severity
 
 
 def _parse_feed_entries(
@@ -242,6 +259,7 @@ def _parse_feed_entries(
         region, kw_region = _classify_region(combined_en, region_hint)
         severity, raw_conf = _classify_severity(combined_en)
         confidence = _apply_confidence_band(raw_conf, source_cfg["category"])
+        severity = _enforce_severity_floor(severity, confidence)
 
         # Store the English title; keep original in description for reference
         display_title = title_en if title_en != title else title
@@ -391,6 +409,7 @@ class GeoThreatPipeline:
         severity, raw_conf = _classify_severity(text_en)
         category = post.get("category", "search")
         confidence = _apply_confidence_band(raw_conf, category)
+        severity = _enforce_severity_floor(severity, confidence)
         source_label = f"BlueSky/{post['handle']}"
         return GeoThreatEvent(
             source=source_label,
