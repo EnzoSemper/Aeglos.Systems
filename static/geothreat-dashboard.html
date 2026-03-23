@@ -33,9 +33,10 @@
 body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier New',monospace;display:flex;height:100vh;overflow:hidden;font-size:var(--fs-sm);transition:background .2s,color .2s;}
 /* Sidebar */
 .sidebar{width:clamp(160px,14vw,200px);flex-shrink:0;background:var(--panel2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
-.sidebar-logo{padding:1rem;border-bottom:1px solid var(--border);}
+.sidebar-logo{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.65rem;}
+.sidebar-logo img{width:32px;height:32px;object-fit:contain;flex-shrink:0;}
 .sidebar-logo .name{font-size:var(--fs-lg);font-weight:700;color:var(--accent);letter-spacing:.1em;font-family:'IBM Plex Sans','IBM Plex Mono',monospace;}
-.sidebar-logo .sub{font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;}
+.sidebar-logo .sub{font-size:var(--fs-xs);color:var(--muted);margin-top:.15rem;}
 .nav-section{padding:.5rem 0;}
 .nav-label{font-size:var(--fs-xs);letter-spacing:.15em;color:var(--muted);padding:.5rem 1rem .25rem;text-transform:uppercase;}
 .nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;font-size:var(--fs-sm);color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all .15s;}
@@ -327,8 +328,11 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="sidebar-logo">
-    <div class="name">AEGLOS</div>
-    <div class="sub">INTELLIGENCE FUSION</div>
+    <img src="/static/aeglos_logo_white.png" alt="AEGLOS">
+    <div>
+      <div class="name">AEGLOS</div>
+      <div class="sub">INTELLIGENCE FUSION</div>
+    </div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Overview</div>
