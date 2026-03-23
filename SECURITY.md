@@ -13,7 +13,7 @@
 
 Report security vulnerabilities by email to:
 
-**security@aeglos.systems** *(placeholder — update before going public)*
+**security@aeglos.systems**
 
 Include as much of the following as possible:
 
