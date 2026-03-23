@@ -1,0 +1,37 @@
+[Unit]
+Description=AEGLOS Analytics Pro — Web Server (Flask/Gunicorn)
+Documentation=https://github.com/your-org/aeglos-analytics
+After=network.target aeglos-api.service
+
+[Service]
+Type=simple
+User=aeglos
+Group=aeglos
+WorkingDirectory=/opt/aeglos-analytics
+Environment=PATH=/opt/aeglos-analytics/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=API_BASE_URL=http://localhost:8000
+Environment=WEB_PORT=5000
+ExecStart=/opt/aeglos-analytics/venv/bin/gunicorn \
+    --workers 2 \
+    --worker-class sync \
+    --bind 0.0.0.0:5000 \
+    --timeout 60 \
+    --access-logfile - \
+    --error-logfile - \
+    web_server:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5s
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=aeglos-web
+
+[Install]
+WantedBy=multi-user.target

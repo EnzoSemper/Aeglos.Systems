@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AEGLOS Analytics Pro — Demo Mode</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0a0e14;--panel:#111827;--border:#1e293b;--accent:#00d4ff;--text:#e2e8f0;--muted:#64748b;--critical:#ef4444;--high:#f59e0b;--moderate:#3b82f6;--low:#10b981;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;min-height:100vh;}
+.demo-banner{background:linear-gradient(90deg,rgba(245,158,11,.2),rgba(245,158,11,.1),rgba(245,158,11,.2));border-bottom:1px solid rgba(245,158,11,.4);padding:.5rem;text-align:center;font-size:.72rem;color:var(--high);letter-spacing:.15em;}
+header{background:var(--panel);border-bottom:1px solid var(--border);padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;}
+.logo{font-size:1rem;font-weight:700;color:var(--accent);letter-spacing:.15em;}
+.nav{display:flex;gap:1.5rem;}
+.nav a{color:var(--muted);font-size:.72rem;text-decoration:none;transition:color .15s;}
+.nav a:hover{color:var(--accent);}
+.hero{text-align:center;padding:2rem;background:linear-gradient(180deg,rgba(0,212,255,.05) 0%,transparent 100%);}
+.hero h1{font-size:2rem;font-weight:900;color:var(--accent);letter-spacing:.1em;}
+.hero p{font-size:.8rem;color:var(--muted);margin-top:.5rem;}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;padding:.75rem 1.5rem;max-width:1400px;margin:0 auto;}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.card{background:var(--panel);border:1px solid var(--border);padding:1rem;}
+.card h3{font-size:.65rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.stat-val{font-size:2rem;font-weight:900;color:var(--accent);}
+.stat-sub{font-size:.62rem;color:var(--muted);margin-top:.3rem;}
+canvas{max-height:180px;}
+.feed{max-height:260px;overflow-y:auto;}
+.fi{border-bottom:1px solid rgba(255,255,255,.04);padding:.5rem 0;display:flex;gap:.6rem;align-items:flex-start;}
+.fi:last-child{border-bottom:none;}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.fc-critical{background:var(--critical)}.fc-high{background:var(--high)}.fc-moderate{background:var(--moderate)}.fc-low{background:var(--low)}
+.ft{font-size:.7rem;color:var(--text);}
+.fm{font-size:.6rem;color:var(--muted);}
+.badge{font-size:.58rem;padding:.1rem .35rem;font-weight:700;display:inline-block;}
+.bc{background:rgba(239,68,68,.2);color:var(--critical);}
+.bh{background:rgba(245,158,11,.2);color:var(--high);}
+.bm{background:rgba(59,130,246,.2);color:var(--moderate);}
+.bl{background:rgba(16,185,129,.2);color:var(--low);}
+footer{border-top:1px solid var(--border);padding:1.5rem;text-align:center;color:var(--muted);font-size:.65rem;margin-top:1rem;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);}
+</style>
+</head>
+<body>
+<div class="demo-banner">🎯 STANDALONE DEMO MODE — Simulated Intelligence Data — No API Connection Required</div>
+<header>
+  <div class="logo">AEGLOS ANALYTICS PRO</div>
+  <nav class="nav">
+    <a href="/">Home</a>
+    <a href="/geothreat">GeoThreat Live</a>
+    <a href="/dashboard">Technical</a>
+    <a href="http://localhost:8000/docs">API Docs</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <h1>DEMO MODE</h1>
+  <p>Simulated HUMINT/OSINT/GEOINT intelligence data. Start the API server for live feeds.</p>
+</div>
+
+<!-- Stats row -->
+<div class="grid" style="margin-top:.5rem;">
+  <div class="card">
+    <div class="stat-val">342</div>
+    <div class="stat-sub">Total Events (24h)</div>
+  </div>
+  <div class="card">
+    <div class="stat-val" style="color:var(--critical)">47</div>
+    <div class="stat-sub">Critical Events</div>
+  </div>
+  <div class="card">
+    <div class="stat-val" style="color:var(--low)">9/9</div>
+    <div class="stat-sub">Sources Configured</div>
+  </div>
+  <div class="card">
+    <div class="stat-val" style="color:var(--high)">8</div>
+    <div class="stat-sub">Regions Monitored</div>
+  </div>
+</div>
+
+<!-- Charts + Feed -->
+<div class="grid grid-3" style="margin-top:.75rem;">
+  <div class="card">
+    <h3>24h Event Trend</h3>
+    <canvas id="trendChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Severity Distribution</h3>
+    <canvas id="sevChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Regional Events</h3>
+    <canvas id="regChart"></canvas>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-top:.75rem;">
+  <div class="card">
+    <h3>Live Intel Feed (Demo)</h3>
+    <div class="feed" id="demo-feed"></div>
+  </div>
+  <div class="card">
+    <h3>72-Hour Threat Forecast</h3>
+    <canvas id="fcChart"></canvas>
+  </div>
+</div>
+
+<!-- Source status -->
+<div style="padding:.75rem 1.5rem;max-width:1400px;margin:0 auto;">
+  <div class="card">
+    <h3>Data Sources Status (Demo)</h3>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;" id="source-demo"></div>
+  </div>
+</div>
+
+<footer>AEGLOS Analytics Pro v1.0 — Demo Mode — UNCLASSIFIED</footer>
+
+<script>
+Chart.defaults.color='#64748b';Chart.defaults.borderColor='#1e293b';
+Chart.defaults.font.family="'Courier New',monospace";Chart.defaults.font.size=10;
+const C={accent:'#00d4ff',c:'#ef4444',h:'#f59e0b',m:'#3b82f6',l:'#10b981',a2:'#7c3aed'};
+
+// Trend
+const h24=Array.from({length:24},(_,i)=>i+':00');
+const trend=h24.map(()=>Math.floor(Math.random()*20+5));
+new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:h24,datasets:[{label:'Events',data:trend,borderColor:C.accent,backgroundColor:'rgba(0,212,255,.08)',fill:true,tension:.4,borderWidth:1.5,pointRadius:2}]},options:{plugins:{legend:{display:false}}}});
+
+// Severity donut
+new Chart(document.getElementById('sevChart'),{type:'doughnut',data:{labels:['Critical','High','Moderate','Low'],datasets:[{data:[47,112,98,85],backgroundColor:[C.c,C.h,C.m,C.l],borderWidth:0}]},options:{plugins:{legend:{position:'bottom'}},cutout:'60%'}});
+
+// Regional bar
+new Chart(document.getElementById('regChart'),{type:'bar',data:{
+  labels:['Mid East','E.Europe','E.Asia','SE Asia','Africa','S.Asia','Americas'],
+  datasets:[{label:'Events',data:[89,74,61,48,34,21,15],backgroundColor:'rgba(0,212,255,.4)',borderColor:C.accent,borderWidth:1}]
+},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+
+// Forecast
+const fc72=Array.from({length:72},(_,i)=>({x:i,y:0.35+0.15*Math.sin(2*Math.PI*i/24)+Math.random()*0.05}));
+new Chart(document.getElementById('fcChart'),{type:'line',data:{labels:fc72.map(p=>'+'+p.x+'h'),datasets:[{label:'Threat',data:fc72.map(p=>p.y),borderColor:C.accent,backgroundColor:'rgba(0,212,255,.06)',fill:true,tension:.4,borderWidth:1.5,pointRadius:0}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8}},y:{min:0,max:1}}}});
+
+// Demo feed
+const demoTitles=[
+  'Military forces mobilize near contested border region',
+  'Diplomatic tensions escalate over territorial dispute',
+  'Intelligence reports indicate heightened threat environment',
+  'Security forces respond to coordinated incident',
+  'Regional actors conduct joint military exercise',
+  'Economic sanctions trigger political response',
+  'Armed groups advance in contested territory',
+  'International community issues formal warning',
+  'Ceasefire agreement under threat of collapse',
+  'Cross-border incident reported near line of control',
+  'Naval vessels detected in contested maritime zone',
+  'Energy infrastructure targeted in asymmetric attack',
+  'Cyber operations suspected in critical infrastructure sector',
+  'Population displacement reported in conflict zone',
+  'State actor denies involvement in reported incident',
+];
+const demoRegions=['Middle East','Eastern Europe','East Asia','SE Asia','Africa','South Asia','Americas'];
+const demoSevs=['critical','critical','high','high','high','moderate','moderate','moderate','low'];
+const demoSrcs=['AP News','Reuters','BBC World','Al Jazeera','DHS','DoD','FBI'];
+
+const feedEl=document.getElementById('demo-feed');
+feedEl.innerHTML=Array.from({length:15},(_,i)=>{
+  const sev=demoSevs[i%demoSevs.length];
+  const time=new Date(Date.now()-i*240000);
+  return `<div class="fi">
+    <div class="dot fc-${sev}"></div>
+    <div><div class="ft">${demoTitles[i]}</div>
+    <div class="fm">${time.toISOString().substring(11,19)} UTC · ${demoSrcs[i%demoSrcs.length]} · ${demoRegions[i%demoRegions.length]} <span class="badge b${sev[0]}">${sev.toUpperCase()}</span></div></div>
+  </div>`;
+}).join('');
+
+// Sources
+const sources=[
+  {name:'AP News',cat:'News',ok:true,lat:182},{name:'BBC World',cat:'News',ok:true,lat:195},
+  {name:'Reuters',cat:'News',ok:true,lat:173},{name:'Al Jazeera',cat:'News',ok:true,lat:341},
+  {name:'TASS',cat:'News',ok:true,lat:412},{name:'Xinhua',cat:'News',ok:true,lat:509},
+  {name:'FBI',cat:'Government',ok:true,lat:224},{name:'DoD',cat:'Government',ok:true,lat:198},
+  {name:'DHS',cat:'Government',ok:true,lat:211},
+];
+document.getElementById('source-demo').innerHTML=sources.map(s=>`
+  <div style="background:var(--bg);border:1px solid var(--border);padding:.65rem;display:flex;justify-content:space-between;align-items:center;">
+    <div><div style="font-size:.7rem;font-weight:700">${s.name}</div><div style="font-size:.6rem;color:var(--muted)">${s.cat} · ${s.lat}ms</div></div>
+    <div style="font-size:.6rem;padding:.15rem .4rem;background:rgba(16,185,129,.2);color:var(--low);font-weight:700">ONLINE</div>
+  </div>`).join('');
+</script>
+</body>
+</html>

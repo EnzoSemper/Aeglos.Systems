@@ -1,0 +1,35 @@
+[Unit]
+Description=AEGLOS Analytics Pro — API Server (FastAPI/Uvicorn)
+Documentation=https://github.com/your-org/aeglos-analytics
+After=network.target
+
+[Service]
+Type=simple
+User=aeglos
+Group=aeglos
+WorkingDirectory=/opt/aeglos-analytics
+Environment=PATH=/opt/aeglos-analytics/venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/aeglos-analytics/venv/bin/uvicorn main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --log-level info \
+    --access-log
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=aeglos-api
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/pyinstaller_work/
+*.spec.bak
+.eggs/
+
+# Virtual environments
+venv/
+venv_build/
+.venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# State / persistence (machine-specific, not for version control)
+state/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+*.dmg
+dist_app/
+
+# PyInstaller build artefacts
+build/AEGLOS*/
+build/pyinstaller_work/
+dist/
+dist_app/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Byte-compiled
+*.pyc
+
+# Ollama binary and ML dylibs — fetched via tools/fetch_ollama.sh, not committed
+bin/
+
+# Runtime
+.pids/
+
+# Claude Code internal state
+.claude/

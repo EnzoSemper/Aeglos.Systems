@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AEGLOS GeoThreat — Intelligence Fusion Dashboard</title>
+<script>try{var _t=localStorage.getItem('aeglos-theme');if(_t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0e14;--panel:#111827;--panel2:#0f172a;--border:#1e293b;
+  --accent:#00d4ff;--accent2:#7c3aed;
+  --text:#e2e8f0;--muted:#64748b;
+  --critical:#ef4444;--high:#f59e0b;--moderate:#3b82f6;--low:#10b981;
+  --chart-grid:#1e293b;--chart-text:#64748b;
+  --fs-xs:clamp(.55rem,.6vw,.65rem);
+  --fs-sm:clamp(.65rem,.7vw,.75rem);
+  --fs-md:clamp(.72rem,.8vw,.85rem);
+  --fs-lg:clamp(.85rem,1vw,1rem);
+  --fs-xl:clamp(1.4rem,2vw,1.8rem);
+}
+[data-theme="light"]{
+  --bg:#d4d0c8;--panel:#e8e4dc;--panel2:#c8c4bc;--border:#aaa9a4;
+  --accent:#0055cc;--accent2:#6633cc;
+  --text:#1a1a1a;--muted:#555550;
+  --critical:#cc0000;--high:#b86000;--moderate:#0055cc;--low:#006633;
+  --chart-grid:#aaa9a4;--chart-text:#555550;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier New',monospace;display:flex;height:100vh;overflow:hidden;font-size:var(--fs-sm);transition:background .2s,color .2s;}
+/* Sidebar */
+.sidebar{width:clamp(160px,14vw,200px);flex-shrink:0;background:var(--panel2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+.sidebar-logo{padding:1rem;border-bottom:1px solid var(--border);}
+.sidebar-logo .name{font-size:var(--fs-lg);font-weight:700;color:var(--accent);letter-spacing:.1em;font-family:'IBM Plex Sans','IBM Plex Mono',monospace;}
+.sidebar-logo .sub{font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;}
+.nav-section{padding:.5rem 0;}
+.nav-label{font-size:var(--fs-xs);letter-spacing:.15em;color:var(--muted);padding:.5rem 1rem .25rem;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;font-size:var(--fs-sm);color:var(--muted);cursor:pointer;border-left:2px solid transparent;transition:all .15s;}
+.nav-item:hover{color:var(--text);background:rgba(128,128,128,.07);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(128,128,128,.1);}
+.nav-item .icon{font-size:.9rem;width:18px;text-align:center;}
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--panel2);border-bottom:1px solid var(--border);padding:.6rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:var(--fs-md);font-weight:700;letter-spacing:.1em;color:var(--text);font-family:'IBM Plex Sans','IBM Plex Mono',monospace;}
+.topbar-meta{font-size:var(--fs-xs);color:var(--muted);}
+.topbar-right{display:flex;align-items:center;gap:1rem;}
+.clock{font-size:var(--fs-sm);color:var(--accent);font-weight:700;}
+.class-tag{font-size:var(--fs-xs);padding:.2rem .5rem;background:rgba(204,0,0,.15);border:1px solid rgba(204,0,0,.3);color:var(--critical);letter-spacing:.1em;}
+.theme-toggle{font-size:var(--fs-xs);padding:.2rem .7rem;background:var(--panel);border:1px solid var(--border);color:var(--muted);cursor:pointer;letter-spacing:.08em;font-family:inherit;transition:all .15s;}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent);}
+.content{flex:1;overflow-y:auto;padding:clamp(.75rem,1.5vw,1.25rem);}
+/* Page sections */
+.page{display:none;animation:fadeIn .2s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* Stat cards */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.25rem;}
+@media(max-width:1200px){.stat-row{grid-template-columns:repeat(2,1fr);}}
+.stat-card{background:var(--panel);border:1px solid var(--border);padding:clamp(.75rem,1.2vw,1rem);position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.stat-card.c::after{background:var(--critical);}
+.stat-card.h::after{background:var(--high);}
+.stat-card.m::after{background:var(--moderate);}
+.stat-card.l::after{background:var(--low);}
+.stat-val{font-size:var(--fs-xl);font-weight:900;line-height:1;}
+.stat-lbl{font-size:var(--fs-xs);color:var(--muted);letter-spacing:.12em;margin-top:.3rem;text-transform:uppercase;}
+.stat-sub{font-size:var(--fs-xs);margin-top:.4rem;}
+/* Charts */
+.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:.75rem;margin-bottom:1.25rem;}
+.chart-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.25rem;}
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem;}
+@media(max-width:1100px){.chart-grid,.chart-grid-2,.chart-grid-3{grid-template-columns:1fr;}}
+.chart-box{background:var(--panel);border:1px solid var(--border);padding:clamp(.75rem,1vw,1rem);}
+.chart-box h3{font-size:var(--fs-xs);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.chart-box canvas{max-height:200px;}
+/* Feed */
+.feed{background:var(--panel);border:1px solid var(--border);padding:1rem;max-height:320px;overflow-y:auto;}
+.feed h3{font-size:var(--fs-xs);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;position:sticky;top:0;background:var(--panel);padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.feed-item{border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;gap:.75rem;align-items:flex-start;opacity:.85;}
+.feed-item:last-child{border-bottom:none;}
+[data-theme="light"] .feed-item{opacity:1;}
+.feed-sev{flex-shrink:0;width:6px;height:6px;border-radius:50%;margin-top:5px;}
+.sev-critical{background:var(--critical);}
+.sev-high{background:var(--high);}
+.sev-moderate{background:var(--moderate);}
+.sev-low{background:var(--low);}
+.feed-body{flex:1;min-width:0;}
+.feed-title{font-size:var(--fs-sm);color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.feed-meta{font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;}
+.feed-tag{display:inline-block;padding:.1rem .4rem;font-size:var(--fs-xs);border-radius:1px;font-weight:700;margin-left:.3rem;}
+.tag-critical{background:rgba(204,0,0,.18);color:var(--critical);}
+.tag-high{background:rgba(184,96,0,.18);color:var(--high);}
+.tag-moderate{background:rgba(0,85,204,.18);color:var(--moderate);}
+.tag-low{background:rgba(0,102,51,.18);color:var(--low);}
+/* Table */
+.intel-table{width:100%;border-collapse:collapse;font-size:var(--fs-sm);}
+.intel-table th{text-align:left;padding:.5rem .75rem;font-size:var(--fs-xs);letter-spacing:.12em;color:var(--muted);border-bottom:1px solid var(--border);background:var(--panel2);}
+.intel-table td{padding:.5rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle;}
+.intel-table tr:hover td{background:rgba(128,128,128,.06);}
+/* Region cards */
+.region-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;}
+@media(max-width:1000px){.region-grid{grid-template-columns:1fr;}}
+.region-card{background:var(--panel);border:1px solid var(--border);padding:1rem;border-left:3px solid;}
+.region-card.critical{border-left-color:var(--critical);}
+.region-card.high{border-left-color:var(--high);}
+.region-card.moderate{border-left-color:var(--moderate);}
+.region-card.low{border-left-color:var(--low);}
+.region-name{font-size:var(--fs-md);font-weight:700;margin-bottom:.4rem;font-family:'IBM Plex Sans','IBM Plex Mono',monospace;}
+.region-stats{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem;}
+.region-stat{font-size:var(--fs-xs);color:var(--muted);}
+.region-stat span{color:var(--text);font-weight:700;}
+/* Source cards */
+.source-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;}
+@media(max-width:1200px){.source-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:800px){.source-grid{grid-template-columns:1fr;}}
+.source-card{background:var(--panel);border:1px solid var(--border);padding:.85rem;display:flex;flex-direction:column;gap:.4rem;}
+.source-head{display:flex;align-items:center;justify-content:space-between;}
+.source-name{font-size:var(--fs-sm);font-weight:700;color:var(--text);}
+.source-status{font-size:var(--fs-xs);padding:.15rem .4rem;font-weight:700;}
+.status-online{background:rgba(0,102,51,.2);color:var(--low);}
+.status-offline{background:rgba(204,0,0,.2);color:var(--critical);}
+.status-error{background:rgba(184,96,0,.2);color:var(--high);}
+.status-unknown{background:rgba(100,116,139,.2);color:var(--muted);}
+.source-meta{font-size:var(--fs-xs);color:var(--muted);}
+.source-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.source-bar-fill{height:100%;background:var(--accent);transition:width .5s;}
+/* Alerts & Personal Feed */
+.alert-item{background:var(--panel);border:1px solid var(--border);padding:1rem;margin-bottom:.75rem;border-left:3px solid;transition:opacity .25s,max-height .3s;}
+.alert-item.critical{border-left-color:var(--critical);}
+.alert-item.high{border-left-color:var(--high);}
+.alert-item.dismissing{opacity:0;max-height:0;padding:0;margin:0;overflow:hidden;}
+.alert-title{font-size:var(--fs-md);font-weight:700;margin-bottom:.3rem;}
+.alert-meta{font-size:var(--fs-xs);color:var(--muted);}
+.alert-conf{float:right;font-size:var(--fs-xs);padding:.15rem .4rem;}
+.conf-gov{background:rgba(0,102,51,.2);color:var(--low);}
+.conf-news{background:rgba(0,85,204,.2);color:var(--moderate);}
+.conf-social{background:rgba(100,116,139,.2);color:var(--muted);}
+.multi-source-badge{display:inline-block;padding:.1rem .35rem;font-size:.6rem;border-radius:1px;font-weight:700;background:rgba(100,116,139,.2);color:var(--muted);margin-left:.35rem;vertical-align:middle;}
+.multi-source-badge.confirmed{background:rgba(0,85,204,.18);color:var(--moderate);}
+.alert-actions{display:flex;gap:.5rem;margin-top:.75rem;align-items:center;}
+.btn-ack{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);color:var(--accent);padding:.3rem .85rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:.06em;transition:background .15s;}
+.btn-ack:hover{background:rgba(0,212,255,.18);}
+.btn-esc{background:rgba(204,0,0,.08);border:1px solid rgba(204,0,0,.3);color:var(--critical);padding:.3rem .85rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:.06em;transition:background .15s;}
+.btn-esc:hover{background:rgba(204,0,0,.18);}
+.btn-remove{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.3rem .75rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;transition:all .15s;}
+.btn-remove:hover{color:var(--critical);border-color:var(--critical);}
+.pf-empty{color:var(--muted);text-align:center;padding:4rem 2rem;font-size:var(--fs-sm);}
+.pf-count{font-size:var(--fs-xs);color:var(--muted);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.pf-item{background:var(--panel);border:1px solid var(--border);padding:1rem;margin-bottom:.75rem;border-left:3px solid;}
+.pf-item.critical{border-left-color:var(--critical);}
+.pf-item.high{border-left-color:var(--high);}
+.pf-item.moderate{border-left-color:var(--moderate);}
+.pf-item.low{border-left-color:var(--low);}
+.pf-title{font-size:var(--fs-md);font-weight:700;margin-bottom:.3rem;}
+.pf-meta{font-size:var(--fs-xs);color:var(--muted);margin-bottom:.5rem;}
+.pf-note-wrap{margin-top:.5rem;}
+.pf-note{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:.4rem .6rem;font-size:var(--fs-xs);font-family:inherit;resize:vertical;min-height:3em;}
+.pf-note:focus{outline:none;border-color:var(--accent);}
+/* Forecast risk bars */
+.risk-bar-container{margin:.5rem 0;}
+.risk-bar-label{display:flex;justify-content:space-between;font-size:var(--fs-xs);margin-bottom:.2rem;}
+.risk-bar{height:8px;background:var(--border);border-radius:2px;overflow:hidden;}
+.risk-fill{height:100%;border-radius:2px;transition:width .6s;}
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--panel2);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+/* Section title tooltips */
+.ttip{position:relative;display:inline-flex;align-items:center;gap:.35rem;cursor:default;}
+.ttip .ttip-icon{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:rgba(100,116,139,.25);color:var(--muted);font-size:.58rem;font-weight:700;line-height:1;flex-shrink:0;font-style:normal;cursor:help;}
+.ttip .ttip-box{visibility:hidden;opacity:0;pointer-events:none;position:absolute;left:0;top:calc(100% + 6px);width:260px;background:var(--panel2);border:1px solid var(--border);padding:.6rem .75rem;font-size:.65rem;font-weight:400;letter-spacing:.02em;color:var(--text);line-height:1.5;text-transform:none;z-index:500;transition:opacity .15s;box-shadow:0 6px 24px rgba(0,0,0,.5);}
+.ttip:hover .ttip-box{visibility:visible;opacity:1;}
+/* Convergence chat */
+.conv-panel{background:var(--panel2);border:1px solid var(--border);margin-bottom:1.25rem;display:flex;flex-direction:column;}
+.conv-header{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+.conv-header-title{font-size:var(--fs-xs);font-weight:700;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:.5rem;}
+.conv-engine-badge{font-size:.58rem;padding:.1rem .4rem;border-radius:1px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);font-weight:700;letter-spacing:.08em;}
+.conv-body{display:flex;flex-direction:column;max-height:520px;}
+.conv-body.collapsed{display:none;}
+.conv-messages{flex:1;overflow-y:auto;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.75rem;min-height:120px;max-height:340px;}
+.conv-msg{display:flex;gap:.6rem;align-items:flex-start;}
+.conv-msg.user{flex-direction:row-reverse;}
+.conv-bubble{max-width:82%;padding:.55rem .8rem;font-size:var(--fs-sm);line-height:1.55;border-radius:2px;}
+.conv-msg.user .conv-bubble{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);color:var(--text);}
+.conv-msg.assistant .conv-bubble{background:var(--panel);border:1px solid var(--border);color:var(--text);}
+.conv-msg.system .conv-bubble{background:transparent;border:none;color:var(--muted);font-size:var(--fs-xs);font-style:italic;width:100%;text-align:center;}
+.conv-avatar{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;margin-top:.1rem;}
+.conv-msg.user .conv-avatar{background:rgba(0,212,255,.15);color:var(--accent);}
+.conv-msg.assistant .conv-avatar{background:rgba(124,58,237,.2);color:#a78bfa;}
+.conv-analysis{display:flex;flex-direction:column;gap:.4rem;}
+.conv-summary{font-weight:600;margin-bottom:.3rem;}
+.conv-confidence{font-size:var(--fs-xs);margin-bottom:.4rem;}
+.conv-connections{list-style:none;display:flex;flex-direction:column;gap:.3rem;}
+.conv-connections li{font-size:var(--fs-xs);padding:.3rem .5rem;background:rgba(0,0,0,.2);border-left:2px solid var(--accent);}
+.conv-implications{font-size:var(--fs-xs);color:var(--muted);margin-top:.3rem;padding-top:.3rem;border-top:1px solid var(--border);}
+.conv-chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:.5rem 1rem;border-top:1px solid var(--border);}
+.conv-chip{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:.25rem .6rem;font-size:.6rem;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .15s;}
+.conv-chip:hover{color:var(--accent);border-color:var(--accent);}
+.conv-input-row{display:flex;gap:.5rem;padding:.6rem 1rem;border-top:1px solid var(--border);}
+.conv-input{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:.4rem .7rem;font-size:var(--fs-sm);font-family:inherit;outline:none;transition:border-color .15s;}
+.conv-input:focus{border-color:var(--accent);}
+.conv-send{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);padding:.4rem .9rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:.06em;transition:all .15s;white-space:nowrap;}
+.conv-send:hover{background:rgba(0,212,255,.2);}
+.conv-send:disabled{opacity:.4;cursor:not-allowed;}
+.conv-thinking{display:flex;align-items:center;gap:.5rem;color:var(--muted);font-size:var(--fs-xs);padding:.4rem 0;}
+.conv-thinking-dots span{animation:blink 1.2s infinite;}&.conv-thinking-dots span:nth-child(2){animation-delay:.2s;}.conv-thinking-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+/* Reports page */
+.report-section{margin-bottom:1.5rem;}
+.report-section h3{font-size:var(--fs-xs);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);}
+.report-tldr{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);padding:1rem;margin-bottom:1.25rem;}
+.report-tldr .headline{font-size:var(--fs-md);font-weight:700;margin-bottom:.5rem;color:var(--accent);font-family:'IBM Plex Sans','IBM Plex Mono',monospace;}
+.report-tldr .body{font-size:var(--fs-sm);line-height:1.6;color:var(--text);}
+.report-row{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1.25rem;}
+@media(max-width:1000px){.report-row{grid-template-columns:1fr;}}
+.report-box{background:var(--panel);border:1px solid var(--border);padding:1rem;}
+.report-box h4{font-size:var(--fs-xs);letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem;}
+.report-line{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm);}
+.report-line:last-child{border-bottom:none;}
+.report-line .label{color:var(--muted);}
+.report-line .val{font-weight:700;color:var(--text);}
+.report-meta{font-size:var(--fs-xs);color:var(--muted);margin-top:.5rem;}
+.report-empty{text-align:center;padding:4rem 2rem;color:var(--muted);font-size:var(--fs-sm);}
+/* ── User Panel Drawer ──────────────────────────────── */
+.user-panel-overlay{position:fixed;inset:0;z-index:1999;background:rgba(0,0,0,.45);display:none;}
+.user-panel-overlay.open{display:block;}
+.user-panel{position:fixed;right:0;top:0;height:100vh;width:380px;z-index:2000;
+  background:var(--panel2);border-left:1px solid var(--border);
+  transform:translateX(100%);transition:transform .25s ease;
+  display:flex;flex-direction:column;overflow:hidden;}
+.user-panel.open{transform:translateX(0);}
+.user-panel-header{display:flex;align-items:center;justify-content:space-between;
+  padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+.user-panel-header h2{font-size:var(--fs-sm);font-weight:700;letter-spacing:.1em;color:var(--text);}
+.user-panel-close{background:transparent;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;
+  padding:.2rem .4rem;font-family:inherit;transition:color .15s;}
+.user-panel-close:hover{color:var(--text);}
+.user-panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.up-tab{flex:1;padding:.55rem .4rem;font-size:var(--fs-xs);letter-spacing:.08em;text-align:center;
+  cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all .15s;
+  background:transparent;border-top:none;border-left:none;border-right:none;font-family:inherit;}
+.up-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.up-tab:hover:not(.active){color:var(--text);}
+.user-panel-body{flex:1;overflow-y:auto;padding:1rem;}
+.up-tab-pane{display:none;}
+.up-tab-pane.active{display:block;}
+/* Panel form elements */
+.up-label{font-size:var(--fs-xs);color:var(--muted);letter-spacing:.08em;margin-bottom:.3rem;display:block;}
+.up-input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);
+  padding:.4rem .6rem;font-size:var(--fs-xs);font-family:inherit;outline:none;
+  transition:border-color .15s;}
+.up-input:focus{border-color:var(--accent);}
+.up-section{margin-bottom:1.2rem;}
+.up-section-title{font-size:var(--fs-xs);letter-spacing:.12em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:.6rem;padding-bottom:.3rem;
+  border-bottom:1px solid var(--border);}
+.up-note{font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.4;}
+.up-radio-row{display:flex;flex-direction:column;gap:.4rem;margin:.4rem 0;}
+.up-radio-row label{display:flex;align-items:flex-start;gap:.5rem;font-size:var(--fs-xs);
+  color:var(--text);cursor:pointer;}
+.up-radio-row input[type=radio]{flex-shrink:0;accent-color:var(--accent);}
+/* Severity keywords */
+.sev-kw-row{display:flex;align-items:center;gap:.4rem;margin:.3rem 0;}
+.sev-kw-tag{background:var(--panel);border:1px solid var(--border);color:var(--text);
+  padding:.2rem .5rem;font-size:.6rem;display:flex;align-items:center;gap:.3rem;}
+.sev-kw-del{background:transparent;border:none;color:var(--muted);cursor:pointer;
+  font-size:.7rem;padding:0 .1rem;font-family:inherit;}
+.sev-kw-del:hover{color:var(--critical);}
+.sev-kw-list{display:flex;flex-wrap:wrap;gap:.3rem;margin:.4rem 0;}
+.sev-kw-add-row{display:flex;gap:.4rem;margin-top:.4rem;}
+.sev-kw-add-row .up-input{flex:1;}
+/* Sources toggle */
+.src-toggle-row{display:flex;align-items:center;justify-content:space-between;
+  padding:.35rem 0;border-bottom:1px solid var(--border);font-size:var(--fs-xs);}
+.src-toggle-row:last-child{border-bottom:none;}
+.src-toggle-name{color:var(--text);flex:1;padding-right:.5rem;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;}
+.src-toggle-check{accent-color:var(--accent);}
+/* Social config */
+.social-platform-section{margin-bottom:1.5rem;}
+.social-platform-title{font-size:var(--fs-sm);font-weight:700;color:var(--text);
+  margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem;}
+.social-save-btn{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);
+  color:var(--accent);padding:.35rem .9rem;font-size:var(--fs-xs);cursor:pointer;
+  font-family:inherit;font-weight:700;letter-spacing:.06em;transition:background .15s;
+  margin-top:.6rem;}
+.social-save-btn:hover{background:rgba(0,212,255,.18);}
+.social-saved-confirm{font-size:.65rem;color:var(--low);margin-left:.5rem;
+  opacity:0;transition:opacity .3s;}
+.social-saved-confirm.show{opacity:1;}
+.social-security-note{font-size:.65rem;color:var(--high);background:rgba(245,158,11,.07);
+  border:1px solid rgba(245,158,11,.2);padding:.5rem .75rem;margin-bottom:1rem;line-height:1.4;}
+/* Custom RSS list */
+.custom-rss-item{background:var(--panel);border:1px solid var(--border);
+  padding:.5rem .75rem;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;}
+.custom-rss-info{flex:1;min-width:0;}
+.custom-rss-name{font-size:var(--fs-xs);font-weight:700;color:var(--text);}
+.custom-rss-url{font-size:.6rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Timezone mode button */
+.tz-btn{font-size:var(--fs-xs);padding:.2rem .7rem;background:var(--panel);border:1px solid var(--border);
+  color:var(--muted);cursor:pointer;letter-spacing:.08em;font-family:inherit;transition:all .15s;}
+.tz-btn:hover{color:var(--text);border-color:var(--accent);}
+/* User icon button */
+.user-btn{background:transparent;border:1px solid var(--border);color:var(--muted);
+  cursor:pointer;padding:.3rem .45rem;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;}
+.user-btn:hover{color:var(--text);border-color:var(--accent);}
+/* Social page */
+.social-card{background:var(--panel);border:1px solid var(--border);padding:1rem;
+  display:flex;flex-direction:column;gap:.5rem;}
+.social-card-head{display:flex;align-items:center;justify-content:space-between;}
+.social-card-name{font-size:var(--fs-sm);font-weight:700;color:var(--text);}
+.social-card-status{font-size:var(--fs-xs);padding:.15rem .4rem;font-weight:700;}
+.social-card-meta{font-size:var(--fs-xs);color:var(--muted);}
+.social-cfg-btn{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);
+  color:var(--accent);padding:.25rem .7rem;font-size:var(--fs-xs);cursor:pointer;
+  font-family:inherit;font-weight:700;letter-spacing:.05em;transition:background .15s;}
+.social-cfg-btn:hover{background:rgba(0,212,255,.18);}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="name">AEGLOS</div>
+    <div class="sub">INTELLIGENCE FUSION</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Overview</div>
+    <div class="nav-item active" data-page="overview"><span class="icon">🌐</span>Global Overview</div>
+    <div class="nav-item" data-page="regions"><span class="icon">🗺</span>Regional Analysis</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Intelligence</div>
+    <div class="nav-item" data-page="sources"><span class="icon">📡</span>Data Sources</div>
+    <div class="nav-item" data-page="events"><span class="icon">📋</span>Live Events</div>
+    <div class="nav-item" data-page="alerts"><span class="icon">🚨</span>Alerts</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Analysis</div>
+    <div class="nav-item" data-page="forecast"><span class="icon">📈</span>Forecasting</div>
+    <div class="nav-item" data-page="patterns"><span class="icon">🔍</span>Patterns</div>
+    <div class="nav-item" data-page="correlations"><span class="icon">⚡</span>Correlations</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">My Intelligence</div>
+    <div class="nav-item" data-page="personalfeed"><span class="icon">📌</span>Personal Feed <span id="pf-badge" style="display:none;margin-left:auto;background:var(--critical);color:#fff;font-size:.55rem;padding:.1rem .35rem;border-radius:8px;font-weight:700;"></span></div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Reporting</div>
+    <div class="nav-item" data-page="reports"><span class="icon">📄</span>Reports</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Social Media</div>
+    <div class="nav-item" data-page="social"><span class="icon">📱</span>Integrations</div>
+  </div>
+  <div style="margin-top:auto;padding:1rem;border-top:1px solid var(--border);">
+    <a href="/" style="font-size:.62rem;color:var(--muted);display:block;margin-bottom:.5rem;">← Back to Home</a>
+    <a href="/dashboard" style="font-size:.62rem;color:var(--muted);display:block;">Technical Dashboard</a>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">GEOTHREAT INTELLIGENCE FUSION DASHBOARD</div>
+      <div class="topbar-meta">HUMINT · OSINT · GEOINT · AI/ML Analysis</div>
+    </div>
+    <div class="topbar-right">
+      <div id="live-status" style="font-size:var(--fs-xs);font-weight:700;letter-spacing:.12em;padding:.15rem .5rem;border-radius:2px;display:none;"></div>
+      <div class="clock" id="clock">--:--:-- UTC</div>
+      <button class="tz-btn" id="tz-btn" onclick="cycleTzMode()">UTC</button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">☀ LIGHT</button>
+      <button class="user-btn" id="user-btn" onclick="openUserPanel()" title="User Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </button>
+      <div class="class-tag">UNCLASSIFIED // FOUO</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Page: Overview -->
+    <div class="page active" id="page-overview">
+      <div class="stat-row">
+        <div class="stat-card c">
+          <div class="stat-val" id="stat-total">—</div>
+          <div class="stat-lbl">Total Events</div>
+          <div class="stat-sub" style="color:var(--muted);">Last 24h collection</div>
+        </div>
+        <div class="stat-card h">
+          <div class="stat-val" id="stat-critical">—</div>
+          <div class="stat-lbl">Critical Stories</div>
+          <div class="stat-sub" style="color:var(--high);">Immediate attention</div>
+        </div>
+        <div class="stat-card m">
+          <div class="stat-val" id="stat-sources">—</div>
+          <div class="stat-lbl">Sources Online</div>
+          <div class="stat-sub" style="color:var(--low);">Active feeds</div>
+        </div>
+        <div class="stat-card l">
+          <div class="stat-val" id="stat-regions">9</div>
+          <div class="stat-lbl">Regions Monitored</div>
+          <div class="stat-sub" style="color:var(--moderate);">Global coverage</div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-box">
+          <h3>24-Hour Event Trend</h3>
+          <canvas id="trendChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Severity Distribution</h3>
+          <canvas id="severityChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="feed" id="live-feed">
+          <h3>Live Intel Feed</h3>
+          <div id="feed-items"><div style="color:var(--muted);font-size:.7rem;">Loading intelligence feed...</div></div>
+        </div>
+        <div class="chart-box">
+          <h3>Regional Distribution</h3>
+          <canvas id="regionChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Regions -->
+    <div class="page" id="page-regions">
+      <div class="chart-grid-2" style="margin-bottom:1.25rem;">
+        <div class="chart-box">
+          <h3>Regional Threat Levels</h3>
+          <canvas id="regionalBarChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Regional Event Volume</h3>
+          <canvas id="regionalPieChart"></canvas>
+        </div>
+      </div>
+      <div class="region-grid" id="region-cards">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Page: Sources -->
+    <div class="page" id="page-sources">
+      <div class="stat-row">
+        <div class="stat-card l"><div class="stat-val" id="src-online">—</div><div class="stat-lbl">Online</div></div>
+        <div class="stat-card c"><div class="stat-val" id="src-error">—</div><div class="stat-lbl">Error</div></div>
+        <div class="stat-card m"><div class="stat-val" id="src-total">17</div><div class="stat-lbl">Total Configured</div></div>
+        <div class="stat-card h"><div class="stat-val" id="src-events">—</div><div class="stat-lbl">Events Collected</div></div>
+      </div>
+      <div class="source-grid" id="source-cards"><!-- populated --></div>
+    </div>
+
+    <!-- Page: Events -->
+    <div class="page" id="page-events">
+      <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;">
+        <select id="filter-region" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:.4rem .75rem;font-size:.7rem;font-family:inherit;">
+          <option value="">All Regions</option>
+          <option>Middle East</option><option>Eastern Europe</option><option>East Asia</option>
+          <option>Southeast Asia</option><option>Australia &amp; Pacific</option><option>Africa</option>
+          <option>South Asia</option><option>Americas</option><option>Global</option>
+        </select>
+        <select id="filter-severity" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:.4rem .75rem;font-size:.7rem;font-family:inherit;">
+          <option value="">All Severities</option>
+          <option value="critical">Critical</option><option value="high">High</option>
+          <option value="moderate">Moderate</option><option value="low">Low</option>
+        </select>
+        <button onclick="applyFilters()" style="background:var(--accent);color:#000;border:none;padding:.4rem 1rem;font-size:.7rem;font-family:inherit;cursor:pointer;font-weight:700;">APPLY</button>
+      </div>
+      <div style="background:var(--panel);border:1px solid var(--border);overflow-x:auto;">
+        <table class="intel-table">
+          <thead><tr>
+            <th>TIME (UTC)</th><th>REGION</th><th>SEVERITY</th><th>SOURCE</th>
+            <th>TITLE</th><th>INTEL TIER</th>
+          </tr></thead>
+          <tbody id="events-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted);">Loading events...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Page: Alerts -->
+    <div class="page" id="page-alerts">
+      <div id="alerts-container">
+        <!-- populated -->
+      </div>
+    </div>
+
+    <!-- Page: Forecast -->
+    <div class="page" id="page-forecast">
+      <div class="stat-row">
+        <div class="stat-card c"><div class="stat-val">72h</div><div class="stat-lbl">Forecast Horizon</div></div>
+        <div class="stat-card h"><div class="stat-val">15m</div><div class="stat-lbl">Resolution</div></div>
+        <div class="stat-card m"><div class="stat-val">97%</div><div class="stat-lbl">Initial Confidence</div></div>
+        <div class="stat-card l"><div class="stat-val">9</div><div class="stat-lbl">Regions Modeled</div></div>
+      </div>
+      <div class="chart-box" style="margin-bottom:1.25rem;">
+        <h3><span class="ttip">72-Hour Global Threat Forecast<i class="ttip-icon">?</i><span class="ttip-box">Piecewise linear trend + Fourier seasonality model (Prophet-style) fitted to hourly event counts over the past 7 days. The shaded band shows the 80% confidence interval. Forecast degrades in accuracy beyond 48h. Driven entirely by real ingested events — no synthetic data.</span></span></h3>
+        <canvas id="forecastChart" style="max-height:250px;"></canvas>
+      </div>
+      <div class="chart-grid-2">
+        <div class="chart-box">
+          <h3><span class="ttip">Regional Risk Assessment<i class="ttip-icon">?</i><span class="ttip-box">Per-region composite risk score (0–100) derived from three signals: (1) 48h event rate vs. baseline, (2) weighted severity of recent events (critical×4, high×2, moderate×1), (3) source diversity (more corroborating outlets = higher confidence). Scores normalised across all active regions.</span></span></h3>
+          <div id="regional-risk-bars"></div>
+        </div>
+        <div class="chart-box">
+          <h3><span class="ttip">Confidence Decay<i class="ttip-icon">?</i><span class="ttip-box">Forecast confidence decreases over the horizon. Starts at the model's in-sample accuracy (typically 95–99%) and decays exponentially as uncertainty compounds. At 72h the confidence floor reflects the model's out-of-sample performance on held-out data. Use forecasts beyond 48h as indicative, not predictive.</span></span></h3>
+          <canvas id="confidenceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page: Patterns -->
+    <div class="page" id="page-patterns">
+      <div class="chart-grid-2">
+        <div class="chart-box">
+          <h3>24-Hour Activity Pattern</h3>
+          <canvas id="patternChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Event Type Frequency</h3>
+          <canvas id="freqChart"></canvas>
+        </div>
+      </div>
+      <div style="background:var(--panel);border:1px solid var(--border);padding:1rem;margin-top:.75rem;">
+        <h3 style="font-size:.7rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;">Detected Patterns</h3>
+        <div id="pattern-list"></div>
+      </div>
+    </div>
+
+    <!-- Page: Correlations -->
+    <div class="page" id="page-correlations">
+      <div class="chart-box" style="margin-bottom:1.25rem;overflow-x:auto;">
+        <h3><span class="ttip">Region-to-Region Correlation Matrix<i class="ttip-icon">?</i><span class="ttip-box">Pearson correlation of hourly event-count time series between each pair of regions. A value near +1.0 means the two regions' event volumes rise and fall together (possible linked crises or shared news cycles). Near −1.0 means they move inversely. Near 0 means independent. Computed from the last 7 days of ingested events.</span></span></h3>
+        <div id="correlation-matrix"><div style="color:var(--muted);text-align:center;padding:3rem;font-size:.8rem;">Awaiting live data…</div></div>
+      </div>
+      <div class="chart-box" style="overflow-x:auto;">
+        <h3><span class="ttip">Source × Region Event Heatmap<i class="ttip-icon">?</i><span class="ttip-box">Total events contributed by each source (row) broken down by region (column). Darker blue = more events. Reveals which sources focus on which regions, and whether coverage is balanced or skewed. Sources with narrow regional coverage may introduce bias in regional threat assessments.</span></span></h3>
+        <div id="source-heatmap"><div style="color:var(--muted);text-align:center;padding:3rem;font-size:.8rem;">Awaiting live data…</div></div>
+      </div>
+    </div>
+
+    <!-- Page: Personal Feed -->
+    <div class="page" id="page-personalfeed">
+
+      <!-- Convergence Intelligence Chatbox -->
+      <div class="conv-panel" id="conv-panel">
+        <div class="conv-header" onclick="toggleConvPanel()">
+          <div class="conv-header-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            CONVERGENCE INTELLIGENCE
+            <span class="conv-engine-badge" id="conv-engine-badge">CHECKING…</span>
+          </div>
+          <span id="conv-collapse-icon" style="color:var(--muted);font-size:.7rem;">▲ COLLAPSE</span>
+        </div>
+        <div class="conv-body" id="conv-body">
+          <div class="conv-messages" id="conv-messages">
+            <div class="conv-msg system">
+              <div class="conv-bubble">AEGLOS Convergence Intelligence ready. Ask about correlations, patterns, or strategic implications across current intelligence.</div>
+            </div>
+          </div>
+          <div class="conv-chips" id="conv-chips">
+            <button class="conv-chip" onclick="convPreset('What are the most significant concurrent events in the last 12 hours and what do they suggest?')">Last 12h convergence</button>
+            <button class="conv-chip" onclick="convPreset('Are there any coordinated patterns across regions right now?')">Coordinated patterns</button>
+            <button class="conv-chip" onclick="convPreset('What are the highest-confidence correlations between current critical events?')">Critical correlations</button>
+            <button class="conv-chip" onclick="convPreset('What should I be monitoring in the next 24 hours based on current trends?')">Next 24h watchlist</button>
+            <button class="conv-chip" onclick="convPreset('Is there evidence of economic coercion or escalation ladders in the current event set?')">Escalation signals</button>
+          </div>
+          <div class="conv-input-row">
+            <input class="conv-input" id="conv-input" type="text" placeholder="Ask about correlations, patterns, or strategic implications…" maxlength="500"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendConvergenceQuery();}"/>
+            <button class="conv-send" id="conv-send" onclick="sendConvergenceQuery()">ANALYZE ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div>
+          <div style="font-size:var(--fs-lg);font-weight:700;font-family:'IBM Plex Sans',monospace;">Personal Intelligence Feed</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;">Escalated items. Add analyst notes, then export or clear.</div>
+        </div>
+        <div style="display:flex;gap:.5rem;">
+          <button onclick="exportPersonalFeed()" style="background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:.35rem .85rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;letter-spacing:.06em;">⬇ EXPORT JSON</button>
+          <button onclick="clearPersonalFeed()" style="background:rgba(204,0,0,.08);border:1px solid rgba(204,0,0,.3);color:var(--critical);padding:.35rem .85rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;letter-spacing:.06em;">✕ CLEAR ALL</button>
+        </div>
+      </div>
+      <div id="pf-count" class="pf-count"></div>
+      <div id="pf-items"></div>
+    </div>
+
+    <!-- Page: Reports -->
+    <div class="page" id="page-reports">
+      <div id="reports-list">
+        <div class="report-empty">No data yet — reports generate automatically after the first ingest cycle.</div>
+      </div>
+    </div>
+
+    <!-- Page: Social Media -->
+    <div class="page" id="page-social">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div>
+          <div style="font-size:var(--fs-lg);font-weight:700;font-family:'IBM Plex Sans',monospace;">Social Media Integrations</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;">Configure social media sources and view collected intelligence.</div>
+        </div>
+        <button class="social-cfg-btn" onclick="openUserPanel('social')">⚙ Configure</button>
+      </div>
+      <div class="source-grid" id="social-cards-grid" style="margin-bottom:1.25rem;">
+        <!-- populated by JS -->
+      </div>
+      <div class="chart-box">
+        <h3>Social Media Intelligence Feed</h3>
+        <div id="social-feed-items"><div style="color:var(--muted);font-size:.7rem;">No social media events yet.</div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- User Panel Overlay -->
+<div class="user-panel-overlay" id="user-panel-overlay" onclick="closeUserPanel()"></div>
+
+<!-- User Panel Drawer -->
+<div class="user-panel" id="user-panel">
+  <div class="user-panel-header">
+    <h2>USER PREFERENCES</h2>
+    <button class="user-panel-close" onclick="closeUserPanel()">✕</button>
+  </div>
+  <div class="user-panel-tabs">
+    <button class="up-tab active" data-uptab="profile" onclick="switchUpTab('profile')">Profile</button>
+    <button class="up-tab" data-uptab="severity" onclick="switchUpTab('severity')">Severity</button>
+    <button class="up-tab" data-uptab="sources" onclick="switchUpTab('sources')">Sources</button>
+    <button class="up-tab" data-uptab="social" onclick="switchUpTab('social')">Social</button>
+    <button class="up-tab" data-uptab="aiengine" onclick="switchUpTab('aiengine')">AI Engine</button>
+  </div>
+  <div class="user-panel-body">
+
+    <!-- Tab: Profile -->
+    <div class="up-tab-pane active" id="uptab-profile">
+      <div class="up-section">
+        <div class="up-section-title">Display Name</div>
+        <label class="up-label" for="up-display-name">Analyst Name</label>
+        <input class="up-input" id="up-display-name" type="text" placeholder="Enter display name…"
+          oninput="updatePref('displayName', this.value)"/>
+      </div>
+      <div class="up-section">
+        <div class="up-section-title">Timezone Mode</div>
+        <div class="up-radio-row">
+          <label>
+            <input type="radio" name="tz-mode" value="utc" onchange="updatePref('tzMode','utc'); applyTzMode()"/>
+            <span><strong>UTC</strong><br><span style="color:var(--muted);font-size:.6rem;">All times displayed as UTC. Best for coordination across time zones.</span></span>
+          </label>
+          <label>
+            <input type="radio" name="tz-mode" value="local" onchange="updatePref('tzMode','local'); applyTzMode()"/>
+            <span><strong>My Local Time</strong><br><span style="color:var(--muted);font-size:.6rem;">Convert all timestamps to your browser's local timezone.</span></span>
+          </label>
+          <label>
+            <input type="radio" name="tz-mode" value="event" onchange="updatePref('tzMode','event'); applyTzMode()"/>
+            <span><strong>Event Local Time</strong><br><span style="color:var(--muted);font-size:.6rem;">Show time in the timezone of the event's region. Adds region abbreviation suffix.</span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Severity -->
+    <div class="up-tab-pane" id="uptab-severity">
+      <div class="up-note" style="margin-bottom:.75rem;">Custom keywords override the severity level of events containing that keyword in their title. Applied client-side at display time only.</div>
+      <div id="sev-kw-panels"></div>
+    </div>
+
+    <!-- Tab: Sources -->
+    <div class="up-tab-pane" id="uptab-sources">
+      <div class="up-note" style="margin-bottom:.75rem;">Source filtering applies to display only — all sources are still collected.</div>
+      <div style="display:flex;gap:.5rem;margin-bottom:.75rem;">
+        <button class="social-save-btn" style="flex:1;" onclick="enableAllSources()">Enable All</button>
+        <button class="social-save-btn" style="flex:1;background:rgba(204,0,0,.08);border-color:rgba(204,0,0,.3);color:var(--critical);" onclick="disableAllSources()">Disable All</button>
+      </div>
+      <div id="sources-toggle-list"><div style="color:var(--muted);font-size:.65rem;">No sources loaded yet.</div></div>
+    </div>
+
+    <!-- Tab: Social Media -->
+    <div class="up-tab-pane" id="uptab-social">
+      <div class="social-security-note">⚠ API keys are stored in browser localStorage. For production use, configure via environment variables.</div>
+
+      <!-- Twitter/X -->
+      <div class="social-platform-section">
+        <div class="social-platform-title">🐦 Twitter / X</div>
+        <div class="up-section">
+          <label class="up-label">Bearer Token</label>
+          <input class="up-input" id="tw-bearer" type="password" placeholder="AAAA..."/>
+          <label class="up-label" style="margin-top:.5rem;">Accounts to Monitor (one per line)</label>
+          <textarea class="up-input" id="tw-accounts" rows="3" placeholder="@handle1&#10;@handle2"></textarea>
+          <label style="display:flex;align-items:center;gap:.4rem;margin-top:.4rem;font-size:var(--fs-xs);color:var(--text);cursor:pointer;">
+            <input type="checkbox" id="tw-enabled" style="accent-color:var(--accent);"/> Enabled
+          </label>
+          <div class="up-note">Twitter API v2 — requires a free developer account</div>
+          <div style="display:flex;align-items:center;margin-top:.5rem;">
+            <button class="social-save-btn" onclick="saveSocialConfig('twitter')">Save</button>
+            <span class="social-saved-confirm" id="tw-confirm">Saved ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BlueSky -->
+      <div class="social-platform-section">
+        <div class="social-platform-title">🦋 BlueSky</div>
+        <div class="up-section">
+          <label class="up-label">Additional Handles (one per line, beyond defaults)</label>
+          <textarea class="up-input" id="bsky-handles" rows="3" placeholder="handle.bsky.social"></textarea>
+          <label class="up-label" style="margin-top:.5rem;">Identifier (your bsky.social handle)</label>
+          <input class="up-input" id="bsky-identifier" type="text" placeholder="you.bsky.social"/>
+          <label class="up-label" style="margin-top:.5rem;">App Password</label>
+          <input class="up-input" id="bsky-password" type="password" placeholder="xxxx-xxxx-xxxx-xxxx"/>
+          <div class="up-note">Free account at bsky.social — no API key needed</div>
+          <div style="display:flex;align-items:center;margin-top:.5rem;">
+            <button class="social-save-btn" onclick="saveSocialConfig('bluesky')">Save</button>
+            <span class="social-saved-confirm" id="bsky-confirm">Saved ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="social-platform-section">
+        <div class="social-platform-title">✈ Telegram</div>
+        <div class="up-section">
+          <label class="up-label">Bot Token</label>
+          <input class="up-input" id="tg-token" type="password" placeholder="123456:AABB..."/>
+          <label class="up-label" style="margin-top:.5rem;">Channel Usernames (one per line, with @)</label>
+          <textarea class="up-input" id="tg-channels" rows="3" placeholder="@channel1&#10;@channel2"></textarea>
+          <div class="up-note">Create a bot via @BotFather to get a token</div>
+          <div style="display:flex;align-items:center;margin-top:.5rem;">
+            <button class="social-save-btn" onclick="saveSocialConfig('telegram')">Save</button>
+            <span class="social-saved-confirm" id="tg-confirm">Saved ✓</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom RSS -->
+      <div class="social-platform-section">
+        <div class="social-platform-title">📰 Custom RSS</div>
+        <div class="up-section">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.4rem;">
+            <input class="up-input" id="rss-name" type="text" placeholder="Feed name"/>
+            <select class="up-input" id="rss-cat">
+              <option value="news">News</option>
+              <option value="analysis">Analysis</option>
+              <option value="osint">OSINT</option>
+              <option value="government">Government</option>
+            </select>
+          </div>
+          <input class="up-input" id="rss-url" type="text" placeholder="https://example.com/feed.xml" style="margin-bottom:.4rem;"/>
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <label class="up-label" style="margin:0;">Reliability:</label>
+            <input class="up-input" id="rss-rel" type="number" min="0" max="1" step="0.05" value="0.75" style="width:80px;"/>
+            <button class="social-save-btn" style="margin:0;" onclick="addCustomRss()">+ Add</button>
+          </div>
+          <div id="custom-rss-list" style="margin-top:.6rem;"></div>
+          <div style="display:flex;align-items:center;margin-top:.5rem;">
+            <button class="social-save-btn" onclick="saveSocialConfig('custom_rss')">Save All RSS</button>
+            <span class="social-saved-confirm" id="rss-confirm">Saved ✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: AI Engine -->
+    <div class="up-tab-pane" id="uptab-aiengine">
+      <div class="up-section">
+        <div class="up-label" style="font-size:var(--fs-md);color:var(--text);font-weight:700;margin-bottom:.75rem;">Convergence Intelligence Engine</div>
+
+        <!-- Ollama local engine card -->
+        <div style="background:var(--panel);border:1px solid var(--border);padding:.75rem;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+            <span class="up-label" style="margin:0;">Local Engine (Ollama)</span>
+            <span id="ai-ollama-status" style="font-size:.6rem;font-weight:700;padding:.15rem .4rem;border-radius:1px;background:rgba(100,116,139,.15);color:var(--muted);">CHECKING…</span>
+          </div>
+
+          <!-- Model info card -->
+          <div style="background:var(--panel2);border:1px solid var(--border);padding:.55rem .65rem;margin-bottom:.6rem;">
+            <div style="font-size:.65rem;color:var(--text);font-weight:700;margin-bottom:.15rem;" id="ai-model-label">Qwen 2.5 7B Instruct</div>
+            <div style="font-size:.6rem;color:var(--muted);">
+              <span id="ai-model-quant">Q4_K_M</span> · ~<span id="ai-model-size">4.7</span> GB · <span id="ai-model-source">ollama.com/library/qwen2.5</span>
+            </div>
+            <div style="font-size:.58rem;color:var(--muted);margin-top:.25rem;">No data leaves your machine — inference runs fully local.</div>
+          </div>
+
+          <!-- Download progress (hidden until active) -->
+          <div id="ai-pull-section" style="display:none;margin-bottom:.6rem;">
+            <div style="display:flex;justify-content:space-between;font-size:.6rem;color:var(--muted);margin-bottom:.2rem;">
+              <span id="ai-pull-status">Preparing…</span>
+              <span id="ai-pull-pct">0%</span>
+            </div>
+            <div style="background:var(--panel2);border:1px solid var(--border);height:6px;border-radius:1px;overflow:hidden;">
+              <div id="ai-pull-bar" style="height:100%;width:0%;background:var(--accent);transition:width .4s ease;"></div>
+            </div>
+            <div style="font-size:.58rem;color:var(--muted);margin-top:.2rem;" id="ai-pull-bytes"></div>
+          </div>
+
+          <!-- Error -->
+          <div id="ai-pull-error" style="display:none;font-size:.6rem;color:var(--critical);margin-bottom:.5rem;padding:.3rem .5rem;background:rgba(204,0,0,.08);border:1px solid rgba(204,0,0,.2);"></div>
+
+          <!-- Action buttons -->
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">
+            <button id="ai-download-btn" onclick="startModelDownload()" style="background:var(--accent);border:none;color:#000;padding:.3rem .8rem;font-size:.6rem;cursor:pointer;font-family:inherit;letter-spacing:.06em;font-weight:700;">⬇ DOWNLOAD MODEL</button>
+            <button onclick="checkOllamaStatus()" style="background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:.3rem .7rem;font-size:.6rem;cursor:pointer;font-family:inherit;letter-spacing:.06em;">↺ REFRESH</button>
+          </div>
+          <div id="ai-ollama-binary-missing" style="display:none;font-size:.58rem;color:var(--muted);margin-top:.5rem;line-height:1.5;padding:.35rem .5rem;background:var(--panel2);border:1px solid var(--border);">
+            ⚠ Ollama binary not bundled. Run <code style="background:var(--panel);padding:.05rem .25rem;">tools/fetch_ollama.sh</code> then restart the app.
+          </div>
+        </div>
+
+        <!-- API fallback preference -->
+        <div class="up-label">Fallback API (if Ollama unavailable)</div>
+        <select id="ai-fallback-select" class="up-input" style="margin-bottom:.75rem;" onchange="saveAiFallback()">
+          <option value="claude">Claude (Anthropic) — claude-haiku</option>
+          <option value="openai">ChatGPT (OpenAI) — gpt-4o-mini</option>
+          <option value="gemini">Gemini (Google) — gemini-1.5-flash</option>
+        </select>
+
+        <!-- API keys -->
+        <div class="up-label">Anthropic (Claude) API Key</div>
+        <div style="display:flex;gap:.4rem;margin-bottom:.6rem;">
+          <input class="up-input" id="ai-key-claude" type="password" placeholder="sk-ant-…" style="flex:1;"/>
+          <button class="social-save-btn" style="margin:0;" onclick="saveAiKey('claude')">Save</button>
+          <span class="social-saved-confirm" id="ai-saved-claude">Saved ✓</span>
+        </div>
+
+        <div class="up-label">OpenAI API Key</div>
+        <div style="display:flex;gap:.4rem;margin-bottom:.6rem;">
+          <input class="up-input" id="ai-key-openai" type="password" placeholder="sk-…" style="flex:1;"/>
+          <button class="social-save-btn" style="margin:0;" onclick="saveAiKey('openai')">Save</button>
+          <span class="social-saved-confirm" id="ai-saved-openai">Saved ✓</span>
+        </div>
+
+        <div class="up-label">Google Gemini API Key</div>
+        <div style="display:flex;gap:.4rem;margin-bottom:.75rem;">
+          <input class="up-input" id="ai-key-gemini" type="password" placeholder="AIza…" style="flex:1;"/>
+          <button class="social-save-btn" style="margin:0;" onclick="saveAiKey('gemini')">Save</button>
+          <span class="social-saved-confirm" id="ai-saved-gemini">Saved ✓</span>
+        </div>
+
+        <div style="font-size:.6rem;color:var(--muted);line-height:1.5;padding:.5rem;background:var(--panel);border:1px solid var(--border);">
+          ⚠ API keys stored in browser localStorage. For production, configure via environment variables <code>ANTHROPIC_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>GEMINI_API_KEY</code>.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/static/geothreat-live.js"></script>
+<script>
+// ── Navigation ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    const page = document.getElementById('page-' + item.dataset.page);
+    if (page) page.classList.add('active');
+  });
+});
+
+// ── Preferences ──────────────────────────────────────────────────────────────
+function loadPrefs() {
+  try { return JSON.parse(localStorage.getItem('aeglos-prefs') || '{}'); }
+  catch { return {}; }
+}
+function savePrefs(obj) {
+  localStorage.setItem('aeglos-prefs', JSON.stringify(obj));
+}
+function updatePref(key, value) {
+  const p = loadPrefs();
+  p[key] = value;
+  savePrefs(p);
+}
+
+// ── Timezone helpers ──────────────────────────────────────────────────────────
+const REGION_TZ = {
+  'Middle East': 'Asia/Baghdad',
+  'Eastern Europe': 'Europe/Kiev',
+  'East Asia': 'Asia/Shanghai',
+  'Southeast Asia': 'Asia/Bangkok',
+  'South Asia': 'Asia/Kolkata',
+  'Africa': 'Africa/Nairobi',
+  'Americas': 'America/Chicago',
+  'Australia & Pacific': 'Australia/Sydney',
+  'Global': 'UTC',
+};
+const REGION_ABBR = {
+  'Middle East': 'ME', 'Eastern Europe': 'EE', 'East Asia': 'EA',
+  'Southeast Asia': 'SEA', 'South Asia': 'SA', 'Africa': 'AF',
+  'Americas': 'AM', 'Australia & Pacific': 'AP', 'Global': 'UTC',
+};
+
+function fmtTs(isoString, region) {
+  if (!isoString) return '—';
+  const prefs = loadPrefs();
+  const mode = prefs.tzMode || 'utc';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    if (mode === 'utc') {
+      return d.toISOString().replace('T',' ').substring(0,19) + ' UTC';
+    } else if (mode === 'local') {
+      return new Intl.DateTimeFormat(undefined, {dateStyle:'short', timeStyle:'medium', hour12:false}).format(d);
+    } else if (mode === 'event') {
+      const tz = REGION_TZ[region] || 'UTC';
+      const abbr = REGION_ABBR[region] || '';
+      try {
+        const s = new Intl.DateTimeFormat(undefined, {timeZone: tz, dateStyle:'short', timeStyle:'medium', hour12:false}).format(d);
+        return s + (abbr ? ` (${abbr}LT)` : ' (LT)');
+      } catch {
+        return d.toISOString().replace('T',' ').substring(0,19) + ' UTC';
+      }
+    }
+  } catch {
+    return isoString;
+  }
+  return isoString;
+}
+
+const TZ_MODES = ['utc','local','event'];
+const TZ_LABELS = {utc:'UTC', local:'LOCAL', event:'EVENT LT'};
+
+function applyTzMode() {
+  const prefs = loadPrefs();
+  const mode = prefs.tzMode || 'utc';
+  const btn = document.getElementById('tz-btn');
+  if (btn) btn.textContent = TZ_LABELS[mode] || 'UTC';
+  // Sync radio in panel
+  const radio = document.querySelector(`input[name="tz-mode"][value="${mode}"]`);
+  if (radio) radio.checked = true;
+  // Re-render data
+  if (window._lastEvents) window.dispatchEvent(new CustomEvent('geothreat:events', {detail: {stories: window._lastEvents}}));
+  renderPersonalFeed();
+}
+
+function cycleTzMode() {
+  const prefs = loadPrefs();
+  const cur = prefs.tzMode || 'utc';
+  const idx = TZ_MODES.indexOf(cur);
+  const next = TZ_MODES[(idx + 1) % TZ_MODES.length];
+  updatePref('tzMode', next);
+  applyTzMode();
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const prefs = loadPrefs();
+  const mode = prefs.tzMode || 'utc';
+  let txt;
+  const now = new Date();
+  if (mode === 'utc') {
+    txt = now.toISOString().replace('T',' ').substring(0,19)+' UTC';
+  } else if (mode === 'local') {
+    txt = new Intl.DateTimeFormat(undefined, {dateStyle:'short', timeStyle:'medium', hour12:false}).format(now) + ' LT';
+  } else {
+    txt = now.toISOString().replace('T',' ').substring(0,19)+' UTC';
+  }
+  document.getElementById('clock').textContent = txt;
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+const THEMES = {
+  dark: {
+    bg: '#0a0e14', chart_grid: '#1e293b', chart_text: '#64748b',
+    critical: '#ef4444', high: '#f59e0b', moderate: '#3b82f6', low: '#10b981',
+    accent: '#00d4ff', accent2: '#7c3aed',
+  },
+  light: {
+    bg: '#d4d0c8', chart_grid: '#aaa9a4', chart_text: '#555550',
+    critical: '#cc0000', high: '#b86000', moderate: '#0055cc', low: '#006633',
+    accent: '#0055cc', accent2: '#6633cc',
+  },
+};
+let currentTheme = localStorage.getItem('aeglos-theme') || 'dark';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : '');
+  currentTheme = theme;
+  localStorage.setItem('aeglos-theme', theme);
+  const T = THEMES[theme];
+  COLORS.critical = T.critical; COLORS.high = T.high;
+  COLORS.moderate = T.moderate; COLORS.low = T.low;
+  COLORS.accent = T.accent; COLORS.accent2 = T.accent2;
+  Chart.defaults.color = T.chart_text;
+  Chart.defaults.borderColor = T.chart_grid;
+  // Rebuild all active charts with new palette
+  Object.keys(charts).forEach(id => { if (charts[id]) charts[id].destroy(); delete charts[id]; });
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'light' ? '🌙 DARK' : '☀ LIGHT';
+  // Re-dispatch cached data to reinitialize charts
+  if (window._lastStats) window.dispatchEvent(new CustomEvent('geothreat:stats', {detail: window._lastStats}));
+  if (window._lastEvents) window.dispatchEvent(new CustomEvent('geothreat:events', {detail: {events: window._lastEvents}}));
+  if (window._lastRegions) window.dispatchEvent(new CustomEvent('geothreat:regions', {detail: window._lastRegions}));
+  if (window._lastForecast) window.dispatchEvent(new CustomEvent('geothreat:forecast', {detail: window._lastForecast}));
+  if (window._lastPatterns) window.dispatchEvent(new CustomEvent('geothreat:patterns', {detail: window._lastPatterns}));
+  if (window._lastCorrelation) window.dispatchEvent(new CustomEvent('geothreat:correlation', {detail: window._lastCorrelation}));
+}
+
+function toggleTheme() {
+  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+}
+
+// ── User Panel ────────────────────────────────────────────────────────────────
+function openUserPanel(tab) {
+  document.getElementById('user-panel').classList.add('open');
+  document.getElementById('user-panel-overlay').classList.add('open');
+  if (tab) switchUpTab(tab);
+  populatePanelFields();
+}
+function closeUserPanel() {
+  document.getElementById('user-panel').classList.remove('open');
+  document.getElementById('user-panel-overlay').classList.remove('open');
+}
+function switchUpTab(name) {
+  document.querySelectorAll('.up-tab').forEach(t => t.classList.toggle('active', t.dataset.uptab === name));
+  document.querySelectorAll('.up-tab-pane').forEach(p => p.classList.toggle('active', p.id === 'uptab-' + name));
+  if (name === 'sources') renderSourcesToggleList();
+  if (name === 'severity') renderSevKwPanels();
+  if (name === 'social') populateSocialFields();
+}
+
+function populatePanelFields() {
+  const prefs = loadPrefs();
+  const nameEl = document.getElementById('up-display-name');
+  if (nameEl) nameEl.value = prefs.displayName || '';
+  const radio = document.querySelector(`input[name="tz-mode"][value="${prefs.tzMode||'utc'}"]`);
+  if (radio) radio.checked = true;
+  renderSevKwPanels();
+  renderSourcesToggleList();
+}
+
+// ── Severity Keyword Overrides ────────────────────────────────────────────────
+const SEV_LEVELS = ['critical','high','moderate','low'];
+
+function renderSevKwPanels() {
+  const prefs = loadPrefs();
+  const custom = prefs.customSeverity || {};
+  const container = document.getElementById('sev-kw-panels');
+  if (!container) return;
+  container.innerHTML = SEV_LEVELS.map(level => {
+    const kws = custom[level] || [];
+    return `<div class="up-section">
+      <div class="up-section-title" style="color:var(--${level});">${level.toUpperCase()} (${kws.length} custom)</div>
+      <div class="sev-kw-list" id="sev-kw-list-${level}">
+        ${kws.map(kw => `<div class="sev-kw-tag">${escHtml(kw)}<button class="sev-kw-del" onclick="removeSevKw('${level}','${escHtml(kw)}')" title="Remove">×</button></div>`).join('')}
+      </div>
+      <div class="sev-kw-add-row">
+        <input class="up-input" id="sev-kw-input-${level}" type="text" placeholder="Add keyword…" onkeydown="if(event.key==='Enter')addSevKw('${level}')"/>
+        <button class="social-save-btn" style="margin:0;padding:.3rem .6rem;" onclick="addSevKw('${level}')">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addSevKw(level) {
+  const input = document.getElementById('sev-kw-input-' + level);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const prefs = loadPrefs();
+  if (!prefs.customSeverity) prefs.customSeverity = {};
+  if (!prefs.customSeverity[level]) prefs.customSeverity[level] = [];
+  if (!prefs.customSeverity[level].includes(val)) prefs.customSeverity[level].push(val);
+  savePrefs(prefs);
+  input.value = '';
+  renderSevKwPanels();
+  reapplyOverrides();
+}
+
+function removeSevKw(level, kw) {
+  const prefs = loadPrefs();
+  if (!prefs.customSeverity || !prefs.customSeverity[level]) return;
+  prefs.customSeverity[level] = prefs.customSeverity[level].filter(k => k !== kw);
+  savePrefs(prefs);
+  renderSevKwPanels();
+  reapplyOverrides();
+}
+
+function reapplyOverrides() {
+  if (!window._lastEvents) return;
+  allEvents = applySeverityOverrides(filterBySource(window._lastEvents));
+  renderFeed(allEvents);
+  renderEventsTable(allEvents);
+  renderAlerts(allEvents);
+  renderSocialFeed();
+}
+
+// ── Source Filtering ──────────────────────────────────────────────────────────
+function filterBySource(events) {
+  const disabled = new Set((loadPrefs().disabledSources || []));
+  if (!disabled.size) return events;
+  return events.filter(ev => {
+    const srcs = ev.sources || (ev.source ? [ev.source] : []);
+    return srcs.every(s => !disabled.has(s));
+  });
+}
+
+function applySeverityOverrides(events) {
+  const custom = loadPrefs().customSeverity || {};
+  const levels = ['critical','high','moderate','low'];
+  if (levels.every(l => !(custom[l]||[]).length)) return events;
+  return events.map(ev => {
+    const title = (ev.headline || ev.title || '').toLowerCase();
+    for (const level of levels) {
+      const kws = (custom[level] || []).map(k => k.toLowerCase());
+      if (kws.some(kw => title.includes(kw))) {
+        return {...ev, severity: level, _overridden: true};
+      }
+    }
+    return ev;
+  });
+}
+
+function renderSourcesToggleList() {
+  const container = document.getElementById('sources-toggle-list');
+  if (!container) return;
+  const sources = window._lastSources || [];
+  if (!sources.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:.65rem;">No sources loaded yet. Wait for live data.</div>';
+    return;
+  }
+  const prefs = loadPrefs();
+  const disabled = new Set(prefs.disabledSources || []);
+  container.innerHTML = sources.map(s => `
+    <div class="src-toggle-row">
+      <span class="src-toggle-name" title="${escHtml(s.name)}">${escHtml(s.name)}</span>
+      <input type="checkbox" class="src-toggle-check"
+        ${!disabled.has(s.name) ? 'checked' : ''}
+        onchange="toggleSource('${escHtml(s.name)}', this.checked)"/>
+    </div>`).join('');
+}
+
+function toggleSource(name, enabled) {
+  const prefs = loadPrefs();
+  const disabled = new Set(prefs.disabledSources || []);
+  if (enabled) disabled.delete(name); else disabled.add(name);
+  prefs.disabledSources = [...disabled];
+  savePrefs(prefs);
+  reapplyOverrides();
+}
+
+function enableAllSources() {
+  const prefs = loadPrefs();
+  prefs.disabledSources = [];
+  savePrefs(prefs);
+  renderSourcesToggleList();
+  reapplyOverrides();
+}
+
+function disableAllSources() {
+  const sources = window._lastSources || [];
+  const prefs = loadPrefs();
+  prefs.disabledSources = sources.map(s => s.name);
+  savePrefs(prefs);
+  renderSourcesToggleList();
+  reapplyOverrides();
+}
+
+// ── Social Config Save ────────────────────────────────────────────────────────
+function loadSocialConfig() {
+  try { return JSON.parse(localStorage.getItem('aeglos-social') || '{}'); }
+  catch { return {}; }
+}
+function saveSocialLocalStorage(platform, data) {
+  const sc = loadSocialConfig();
+  sc[platform] = data;
+  localStorage.setItem('aeglos-social', JSON.stringify(sc));
+}
+
+function populateSocialFields() {
+  const sc = loadSocialConfig();
+  const tw = sc.twitter || {};
+  const el = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+  const chk = (id, v) => { const e = document.getElementById(id); if (e) e.checked = !!v; };
+  el('tw-bearer', tw.bearer_token || '');
+  el('tw-accounts', (tw.accounts||[]).join('\n'));
+  chk('tw-enabled', tw.enabled !== false);
+  const bsky = sc.bluesky || {};
+  el('bsky-handles', (bsky.extra_handles||[]).join('\n'));
+  el('bsky-identifier', bsky.identifier || '');
+  el('bsky-password', bsky.app_password || '');
+  const tg = sc.telegram || {};
+  el('tg-token', tg.bot_token || '');
+  el('tg-channels', (tg.channels||[]).join('\n'));
+  renderCustomRssList();
+}
+
+function showSavedConfirm(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+async function saveSocialConfig(platform) {
+  let body = {};
+  if (platform === 'twitter') {
+    const accounts = (document.getElementById('tw-accounts')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    body = {platform, bearer_token: document.getElementById('tw-bearer')?.value||'', accounts,
+      enabled: document.getElementById('tw-enabled')?.checked||false};
+    saveSocialLocalStorage('twitter', body);
+    showSavedConfirm('tw-confirm');
+  } else if (platform === 'bluesky') {
+    const extra_handles = (document.getElementById('bsky-handles')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    body = {platform, extra_handles, identifier: document.getElementById('bsky-identifier')?.value||'',
+      app_password: document.getElementById('bsky-password')?.value||''};
+    saveSocialLocalStorage('bluesky', body);
+    showSavedConfirm('bsky-confirm');
+  } else if (platform === 'telegram') {
+    const channels = (document.getElementById('tg-channels')?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    body = {platform, bot_token: document.getElementById('tg-token')?.value||'', channels};
+    saveSocialLocalStorage('telegram', body);
+    showSavedConfirm('tg-confirm');
+  } else if (platform === 'custom_rss') {
+    const sc = loadSocialConfig();
+    body = {platform, feeds: sc.custom_rss?.feeds || []};
+    saveSocialLocalStorage('custom_rss', body);
+    showSavedConfirm('rss-confirm');
+  }
+  // Send to backend
+  try {
+    await fetch('/api/v1/social/configure', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    console.warn('[AEGLOS] Social config backend sync failed:', e.message);
+  }
+}
+
+// Custom RSS management
+function renderCustomRssList() {
+  const sc = loadSocialConfig();
+  const feeds = (sc.custom_rss || {}).feeds || [];
+  const container = document.getElementById('custom-rss-list');
+  if (!container) return;
+  if (!feeds.length) { container.innerHTML = '<div style="color:var(--muted);font-size:.65rem;">No custom feeds added.</div>'; return; }
+  container.innerHTML = feeds.map((f, i) => `
+    <div class="custom-rss-item">
+      <div class="custom-rss-info">
+        <div class="custom-rss-name">${escHtml(f.name)} <span style="color:var(--muted)">[${f.category}]</span></div>
+        <div class="custom-rss-url">${escHtml(f.url)}</div>
+      </div>
+      <button class="sev-kw-del" style="font-size:.8rem;" onclick="removeCustomRss(${i})">×</button>
+    </div>`).join('');
+}
+
+function addCustomRss() {
+  const name = document.getElementById('rss-name')?.value.trim();
+  const url = document.getElementById('rss-url')?.value.trim();
+  const cat = document.getElementById('rss-cat')?.value || 'news';
+  const rel = parseFloat(document.getElementById('rss-rel')?.value || '0.75');
+  if (!name || !url) return;
+  const sc = loadSocialConfig();
+  if (!sc.custom_rss) sc.custom_rss = {feeds: []};
+  if (!sc.custom_rss.feeds) sc.custom_rss.feeds = [];
+  sc.custom_rss.feeds.push({name, url, category: cat, reliability: rel});
+  localStorage.setItem('aeglos-social', JSON.stringify(sc));
+  document.getElementById('rss-name').value = '';
+  document.getElementById('rss-url').value = '';
+  renderCustomRssList();
+}
+
+function removeCustomRss(idx) {
+  const sc = loadSocialConfig();
+  if (sc.custom_rss && sc.custom_rss.feeds) {
+    sc.custom_rss.feeds.splice(idx, 1);
+    localStorage.setItem('aeglos-social', JSON.stringify(sc));
+    renderCustomRssList();
+  }
+}
+
+// ── Social Page Renderers ─────────────────────────────────────────────────────
+function renderSocialPageCards() {
+  const sc = loadSocialConfig();
+  const grid = document.getElementById('social-cards-grid');
+  if (!grid) return;
+  const platforms = [
+    {key:'twitter', name:'Twitter / X', icon:'🐦', desc:'Twitter API v2'},
+    {key:'bluesky', name:'BlueSky', icon:'🦋', desc:'AT Protocol'},
+    {key:'telegram', name:'Telegram', icon:'✈', desc:'Bot API'},
+    {key:'custom_rss', name:'Custom RSS', icon:'📰', desc:'Custom feeds'},
+  ];
+  grid.innerHTML = platforms.map(p => {
+    const cfg = sc[p.key] || {};
+    const configured = p.key === 'custom_rss' ? ((cfg.feeds||[]).length > 0) : !!(cfg.bearer_token || cfg.app_password || cfg.bot_token);
+    const statusCls = configured ? 'status-online' : 'status-unknown';
+    const statusTxt = configured ? 'CONFIGURED' : 'NOT SET';
+    return `<div class="social-card">
+      <div class="social-card-head">
+        <div class="social-card-name">${p.icon} ${p.name}</div>
+        <div class="source-status ${statusCls}">${statusTxt}</div>
+      </div>
+      <div class="social-card-meta">${p.desc}</div>
+      <button class="social-cfg-btn" onclick="openUserPanel('social')">⚙ Configure</button>
+    </div>`;
+  }).join('');
+}
+
+function renderSocialFeed() {
+  const el = document.getElementById('social-feed-items');
+  if (!el) return;
+  const evs = (allEvents || []).filter(ev => {
+    const cats = ev.source_categories || [];
+    const srcs = ev.sources || (ev.source ? [ev.source] : []);
+    return cats.some(c => ['search','osint'].includes(c))
+      || srcs.some(s => s.startsWith('BlueSky/') || s.startsWith('Twitter/') || s.startsWith('Telegram/'));
+  }).slice(0, 20);
+  if (!evs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.7rem;">No social media events in current feed.</div>'; return; }
+  el.innerHTML = evs.map(ev => `
+    <div class="feed-item">
+      <div class="feed-sev sev-${ev.severity}"></div>
+      <div class="feed-body">
+        <div class="feed-title" title="${escHtml(evTitle(ev))}">${evTitle(ev)} ${multiSourceBadge(ev)}</div>
+        <div class="feed-meta">
+          ${fmtTs(ev.timestamp, ev.region)}
+          · <span title="${evSourceFull(ev)}">${evSource(ev)}</span>
+          · <strong style="color:var(--text)">${ev.region}</strong>
+          <span class="feed-tag tag-${ev.severity}">${ev.severity.toUpperCase()}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Chart defaults ────────────────────────────────────────────────────────────
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = '#1e293b';
+Chart.defaults.font.family = "'IBM Plex Mono', 'Courier New', monospace";
+Chart.defaults.font.size = 11;
+
+const COLORS = {
+  critical: '#ef4444', high: '#f59e0b', moderate: '#3b82f6',
+  low: '#10b981', accent: '#00d4ff', accent2: '#7c3aed'
+};
+
+function gridColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || '#1e293b';
+}
+
+// ── Chart instances ────────────────────────────────────────────────────────────
+let charts = {};
+
+function mkChart(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(el, cfg);
+  return charts[id];
+}
+
+// Hourly trend data populated when patterns data arrives
+let _patternHourlyCache = null;
+
+function initOverviewCharts(stats) {
+  // Use cached hourly pattern data if available; otherwise show zero baseline
+  const hours = Array.from({length:24},(_,i)=>i+':00');
+  const trend = _patternHourlyCache
+    ? _patternHourlyCache.map(h => h.count)
+    : Array(24).fill(0);
+  mkChart('trendChart',{type:'line',data:{labels:hours,datasets:[{
+    label:'Events',data:trend,borderColor:COLORS.accent,backgroundColor:'rgba(0,212,255,.08)',
+    fill:true,tension:.4,borderWidth:1.5,pointRadius:2
+  }]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor()}},y:{grid:{color:gridColor()}}}}});
+
+  const sd = stats.severity_distribution || {};
+  const sevKeys = Object.keys(sd);
+  if (sevKeys.length > 0) {
+    mkChart('severityChart',{type:'doughnut',data:{
+      labels: sevKeys.map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+      datasets:[{data: sevKeys.map(k => sd[k]),
+        backgroundColor:[COLORS.critical,COLORS.high,COLORS.moderate,COLORS.low],borderWidth:0}]
+    },options:{plugins:{legend:{position:'bottom'}},cutout:'65%'}});
+  }
+
+  const rd = stats.region_distribution || {};
+  if (Object.keys(rd).length > 0) {
+    mkChart('regionChart',{type:'bar',data:{
+      labels:Object.keys(rd),
+      datasets:[{label:'Events',data:Object.values(rd),backgroundColor:'rgba(0,212,255,.4)',borderColor:COLORS.accent,borderWidth:1}]
+    },options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor()}},y:{grid:{color:gridColor()}}}}});
+  }
+}
+
+function initRegionCharts(regions) {
+  // Exclude 'Global' — it's an unclassified catch-all, not a real region
+  const named = regions.filter(r => r.region !== 'Global');
+  const names = named.map(r=>r.region);
+  const critVals = named.map(r=>r.critical||0);
+  const highVals = named.map(r=>r.high||0);
+  const modVals = named.map(r=>r.moderate||0);
+  mkChart('regionalBarChart',{type:'bar',data:{labels:names,datasets:[
+    {label:'Critical',data:critVals,backgroundColor:COLORS.critical+'aa'},
+    {label:'High',data:highVals,backgroundColor:COLORS.high+'aa'},
+    {label:'Moderate',data:modVals,backgroundColor:COLORS.moderate+'aa'},
+  ]},options:{plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true,grid:{color:gridColor()}},y:{stacked:true,grid:{color:gridColor()}}}}});
+
+  mkChart('regionalPieChart',{type:'pie',data:{
+    labels:names,
+    datasets:[{data:named.map(r=>r.event_count||0),
+      backgroundColor:['#ef4444','#f59e0b','#3b82f6','#10b981','#7c3aed','#06b6d4','#f97316','#64748b'],borderWidth:0}]
+  },options:{plugins:{legend:{position:'bottom'}}}});
+}
+
+function initForecastCharts(data) {
+  const pts = data.points || [];
+  const labels = pts.map(p => p.hour);
+  const threat = pts.map(p => p.threat);
+  const upper = pts.map(p => p.upper);
+  const lower = pts.map(p => p.lower);
+  const conf = pts.map(p => p.confidence);
+
+  mkChart('forecastChart',{type:'line',data:{labels,datasets:[
+    {label:'Upper',data:upper,borderColor:'rgba(239,68,68,.3)',fill:'+1',borderWidth:1,pointRadius:0},
+    {label:'Threat Level',data:threat,borderColor:COLORS.accent,backgroundColor:'rgba(0,212,255,.08)',fill:false,tension:.4,borderWidth:2,pointRadius:0},
+    {label:'Lower',data:lower,borderColor:'rgba(239,68,68,.3)',fill:false,borderWidth:1,pointRadius:0},
+  ]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12},grid:{color:gridColor()}},y:{min:0,max:1,grid:{color:gridColor()}}}}});
+
+  mkChart('confidenceChart',{type:'line',data:{labels,datasets:[{
+    label:'Confidence',data:conf,borderColor:COLORS.accent2,fill:true,
+    backgroundColor:'rgba(124,58,237,.1)',tension:.4,borderWidth:1.5,pointRadius:0
+  }]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12},grid:{color:gridColor()}},y:{min:0,max:1,grid:{color:gridColor()}}}}});
+
+  const regionRisk = data.region_risk || {};
+  const sortedRegions = Object.entries(regionRisk).sort((a,b) => b[1] - a[1]);
+  const el = document.getElementById('regional-risk-bars');
+  if (el) {
+    if (sortedRegions.length === 0) {
+      el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;font-size:.8rem;">No region risk data yet — ingest in progress</div>';
+    } else {
+      el.innerHTML = sortedRegions.map(([name, risk]) => {
+        const pct = Math.round(risk * 100);
+        const color = risk >= 0.7 ? COLORS.critical : risk >= 0.5 ? COLORS.high : risk >= 0.3 ? COLORS.moderate : COLORS.low;
+        return `<div class="risk-bar-container">
+          <div class="risk-bar-label"><span>${name}</span><span style="color:${color}">${pct}%</span></div>
+          <div class="risk-bar"><div class="risk-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+function initPatternCharts(data) {
+  const hourly = data.hourly_count || [];
+  const labels = hourly.map(h => h.hour);
+  const counts = hourly.map(h => h.count);
+
+  mkChart('patternChart',{type:'bar',data:{labels,datasets:[{
+    label:'Events/Hour',data:counts,backgroundColor:'rgba(0,212,255,.4)',borderColor:COLORS.accent,borderWidth:1
+  }]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor()}},y:{grid:{color:gridColor()}}}}});
+
+  const sev = data.severity_distribution || {};
+  const sevKeys = Object.keys(sev);
+  const sevVals = Object.values(sev);
+  const sevColors = sevKeys.map(k => COLORS[k] || COLORS.accent);
+  mkChart('freqChart',{type:'doughnut',data:{
+    labels: sevKeys.map(k => k.charAt(0).toUpperCase() + k.slice(1)),
+    datasets:[{data: sevVals, backgroundColor: sevColors, borderWidth:0}]
+  },options:{plugins:{legend:{position:'bottom'}},cutout:'55%'}});
+
+  const detected = data.detected_patterns || [];
+  const listEl = document.getElementById('pattern-list');
+  if (listEl) {
+    if (detected.length === 0) {
+      listEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;font-size:.8rem;">Insufficient data for pattern detection — awaiting more events</div>';
+    } else {
+      listEl.innerHTML = detected.map(p => `
+        <div style="border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;gap:1rem;align-items:flex-start;">
+          <div style="color:var(--low);font-size:.65rem;white-space:nowrap;padding-top:.2rem;">${Math.round(p.confidence * 100)}%</div>
+          <div>
+            <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;">${p.name}</div>
+            <div style="font-size:.65rem;color:var(--muted);">${p.desc}</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+}
+
+function initCorrelationCharts(data) {
+  const regions = data.regions || [];
+  const matrix = data.correlation_matrix || [];
+  const heatmap = data.source_heatmap || [];
+
+  // Render correlation matrix as color-coded HTML table
+  const matrixEl = document.getElementById('correlation-matrix');
+  if (matrixEl) {
+    if (matrix.length === 0) {
+      matrixEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;font-size:.8rem;">Insufficient region data for correlation matrix</div>';
+    } else {
+      const header = `<tr><th style="background:var(--panel2);padding:.4rem .6rem;font-size:.6rem;color:var(--muted);"></th>${regions.map(r => `<th style="background:var(--panel2);padding:.4rem .6rem;font-size:.6rem;color:var(--muted);white-space:nowrap;">${r}</th>`).join('')}</tr>`;
+      const rows = matrix.map(row => {
+        const cells = row.values.map(v => {
+          const abs = Math.abs(v);
+          let bg, color;
+          if (v >= 0.7) { bg = 'rgba(59,130,246,.4)'; color = '#93c5fd'; }
+          else if (v >= 0.3) { bg = 'rgba(59,130,246,.15)'; color = '#60a5fa'; }
+          else if (v >= -0.3) { bg = 'transparent'; color = 'var(--muted)'; }
+          else if (v >= -0.7) { bg = 'rgba(239,68,68,.15)'; color = '#fca5a5'; }
+          else { bg = 'rgba(239,68,68,.4)'; color = '#f87171'; }
+          return `<td style="padding:.4rem .6rem;font-size:.65rem;font-weight:700;text-align:center;background:${bg};color:${color};">${v.toFixed(2)}</td>`;
+        }).join('');
+        return `<tr><td style="padding:.4rem .6rem;font-size:.65rem;color:var(--text);white-space:nowrap;font-weight:700;">${row.region}</td>${cells}</tr>`;
+      }).join('');
+      matrixEl.innerHTML = `<table style="border-collapse:collapse;width:100%;font-family:'IBM Plex Mono','Courier New',monospace;"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+    }
+  }
+
+  // Render source heatmap
+  const heatmapEl = document.getElementById('source-heatmap');
+  if (heatmapEl) {
+    if (heatmap.length === 0) {
+      heatmapEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;font-size:.8rem;">No source heatmap data yet</div>';
+    } else {
+      const maxVal = Math.max(...heatmap.flatMap(row => Object.values(row.regions)));
+      const header = `<tr><th style="background:var(--panel2);padding:.4rem .6rem;font-size:.6rem;color:var(--muted);">SOURCE</th>${regions.map(r => `<th style="background:var(--panel2);padding:.4rem .6rem;font-size:.6rem;color:var(--muted);white-space:nowrap;">${r}</th>`).join('')}</tr>`;
+      const rows = heatmap.map(row => {
+        const cells = regions.map(r => {
+          const v = row.regions[r] || 0;
+          const intensity = maxVal > 0 ? v / maxVal : 0;
+          const bg = intensity > 0 ? `rgba(0,212,255,${(0.08 + intensity * 0.5).toFixed(2)})` : 'transparent';
+          const color = intensity > 0.5 ? '#fff' : intensity > 0 ? 'var(--accent)' : 'var(--muted)';
+          return `<td style="padding:.4rem .6rem;font-size:.65rem;text-align:center;background:${bg};color:${color};">${v || '—'}</td>`;
+        }).join('');
+        return `<tr><td style="padding:.4rem .6rem;font-size:.65rem;color:var(--text);white-space:nowrap;">${row.source}</td>${cells}</tr>`;
+      }).join('');
+      heatmapEl.innerHTML = `<table style="border-collapse:collapse;width:100%;font-family:'IBM Plex Mono','Courier New',monospace;"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+    }
+  }
+}
+
+// ── Reports renderer ──────────────────────────────────────────────────────────
+function renderReports(stats, events, regionsData) {
+  const el = document.getElementById('reports-list');
+  if (!el) return;
+  if (!stats && (!events || !events.length)) return;
+
+  const now = new Date();
+  const ts = now.toUTCString().replace('GMT','UTC');
+  const s = stats || {};
+
+  // Overall threat level from story-level severity distribution
+  const critical = (events||[]).filter(e=>e.severity==='critical').length;
+  const high     = (events||[]).filter(e=>e.severity==='high').length;
+  const moderate = (events||[]).filter(e=>e.severity==='moderate').length;
+  const low      = (events||[]).filter(e=>e.severity==='low').length;
+  const total    = (events||[]).length;
+  const overallLevel = critical >= 5 ? 'CRITICAL' : high >= 10 ? 'HIGH' : moderate >= 10 ? 'MODERATE' : 'LOW';
+  const levelColor = {'CRITICAL':'var(--critical)','HIGH':'var(--high)','MODERATE':'var(--moderate)','LOW':'var(--low)'}[overallLevel];
+
+  // Top story per region
+  const regionMap = {};
+  (events||[]).forEach(ev => {
+    const r = ev.region || 'Global';
+    if (!regionMap[r]) regionMap[r] = [];
+    regionMap[r].push(ev);
+  });
+  const SEVO = {critical:4,high:3,moderate:2,low:1};
+  const topByRegion = Object.entries(regionMap)
+    .filter(([r]) => r !== 'Global')
+    .map(([r, evs]) => {
+      const sorted = evs.slice().sort((a,b)=>(SEVO[b.severity]||0)-(SEVO[a.severity]||0));
+      return {region: r, top: sorted[0], count: evs.length, critical: evs.filter(e=>e.severity==='critical').length};
+    })
+    .sort((a,b) => (SEVO[b.top.severity]||0) - (SEVO[a.top.severity]||0));
+
+  // Source activity summary
+  const srcCounts = {};
+  (events||[]).forEach(ev => {
+    const srcs = ev.sources || (ev.source ? [ev.source] : []);
+    srcs.forEach(src => { srcCounts[src] = (srcCounts[src]||0)+1; });
+  });
+  const topSources = Object.entries(srcCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  // Multi-source confirmed stories
+  const confirmed = (events||[]).filter(e=>(e.event_count||1)>=3).slice(0,5);
+  const multiSource = (events||[]).filter(e=>(e.event_count||1)>=2 && (e.event_count||1)<3).slice(0,5);
+
+  const sevBar = (sev, count, ttl) => {
+    const pct = ttl > 0 ? Math.round(count/ttl*100) : 0;
+    return `<div class="report-line"><span class="label"><span class="feed-tag tag-${sev}">${sev.toUpperCase()}</span></span><span class="val">${count} <span style="color:var(--muted);font-weight:400;">(${pct}%)</span></span></div>`;
+  };
+
+  let html = `
+    <div class="report-tldr">
+      <div class="headline">INTELLIGENCE SUMMARY — <span style="color:${levelColor}">${overallLevel}</span></div>
+      <div class="body">
+        As of ${ts}: <strong>${total}</strong> intelligence stories across <strong>${topByRegion.length}</strong> monitored regions.
+        ${critical} critical-severity and ${high} high-severity stories require immediate attention.
+        ${s.sources_online || '—'} of ${s.sources_total || '—'} data sources are currently online.
+        ${s.global_unclassified ? `${s.global_unclassified} events could not be assigned to a specific region.` : ''}
+      </div>
+      <div class="report-meta">Auto-generated · ${ts} · ${s.ingest_cycles||0} ingest cycles completed</div>
+    </div>
+
+    <div class="report-row">
+      <div class="report-box">
+        <h4>Story Severity Distribution</h4>
+        ${sevBar('critical',critical,total)}
+        ${sevBar('high',high,total)}
+        ${sevBar('moderate',moderate,total)}
+        ${sevBar('low',low,total)}
+        <div class="report-meta">Based on ${total} deduplicated stories</div>
+      </div>
+      <div class="report-box">
+        <h4>Top Active Sources</h4>
+        ${topSources.map(([src,cnt])=>`<div class="report-line"><span class="label" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${src}">${src}</span><span class="val">${cnt} events</span></div>`).join('')||'<div style="color:var(--muted);font-size:.7rem;">No data</div>'}
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h3>Regional Threat Summary</h3>
+      <div class="report-row" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">
+        ${topByRegion.map(({region,top,count,critical:crit})=>`
+          <div class="report-box">
+            <h4>${region} — <span class="feed-tag tag-${top.severity}" style="font-size:.6rem;">${top.severity.toUpperCase()}</span></h4>
+            <div style="font-size:var(--fs-sm);color:var(--text);margin-bottom:.4rem;line-height:1.4;">${(top.headline||top.title||'').substring(0,120)}${(top.headline||top.title||'').length>120?'…':''}</div>
+            <div class="report-line"><span class="label">Stories</span><span class="val">${count}</span></div>
+            <div class="report-line"><span class="label">Critical</span><span class="val" style="color:var(--critical)">${crit}</span></div>
+          </div>`).join('')||'<div style="color:var(--muted);font-size:.7rem;padding:1rem;">No region data</div>'}
+      </div>
+    </div>
+
+    ${confirmed.length ? `
+    <div class="report-section">
+      <h3>Multi-Source Confirmed Stories (3+ Sources)</h3>
+      ${confirmed.map(ev=>`
+        <div style="background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--moderate);padding:.75rem 1rem;margin-bottom:.5rem;">
+          <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:.25rem;">${evTitle(ev)} <span class="multi-source-badge confirmed">${ev.event_count} SOURCES</span></div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);">${ev.region} · <span class="feed-tag tag-${ev.severity}">${ev.severity.toUpperCase()}</span> · ${evSourceFull(ev)}</div>
+        </div>`).join('')}
+    </div>` : ''}
+  `;
+
+  el.innerHTML = html;
+}
+
+// ── Event listeners for live data ─────────────────────────────────────────────
+let allEvents = [];
+
+window.addEventListener('geothreat:stats', e => {
+  window._lastStats = e.detail;
+  const s = e.detail;
+  const el = id => document.getElementById(id);
+  if(el('stat-total')) el('stat-total').textContent = s.total_events || '—';
+  // stat-critical is updated from stories stream for consistency (see geothreat:events handler)
+  if(el('stat-sources')) el('stat-sources').textContent = `${s.sources_online||'—'}/${s.sources_total||9}`;
+  if(el('src-online')) el('src-online').textContent = s.sources_online||'—';
+  if(el('src-events')) el('src-events').textContent = s.total_ingested||'—';
+  initOverviewCharts(s);
+  renderReports(s, window._lastEvents || [], window._lastRegions);
+});
+
+window.addEventListener('geothreat:events', e => {
+  // API returns 'stories' (clustered) or 'events' (raw fallback)
+  window._lastEvents = e.detail.stories || e.detail.events || [];
+  allEvents = window._lastEvents;
+  renderEventsTable(allEvents);
+  renderFeed(allEvents);
+  renderAlerts(allEvents);
+  // Update critical count from story-level data for accurate overview stat
+  const critCount = allEvents.filter(ev => ev.severity === 'critical').length;
+  const el = document.getElementById('stat-critical');
+  if (el) el.textContent = critCount || '—';
+  renderReports(window._lastStats, allEvents, window._lastRegions);
+});
+
+window.addEventListener('geothreat:sources', e => {
+  window._lastSources = e.detail.sources || [];
+  renderSources(window._lastSources);
+});
+
+window.addEventListener('geothreat:regions', e => {
+  window._lastRegions = e.detail;
+  const regions = e.detail.regions || [];
+  renderRegionCards(regions);
+  initRegionCharts(regions);
+  renderReports(window._lastStats, window._lastEvents || [], e.detail);
+});
+
+window.addEventListener('geothreat:forecast', e => {
+  window._lastForecast = e.detail;
+  initForecastCharts(e.detail);
+});
+window.addEventListener('geothreat:patterns', e => {
+  window._lastPatterns = e.detail;
+  _patternHourlyCache = e.detail.hourly_count || null;
+  initPatternCharts(e.detail);
+  // Refresh trend chart with real hourly counts
+  if (_patternHourlyCache) {
+    const hours = _patternHourlyCache.map(h => h.hour);
+    const counts = _patternHourlyCache.map(h => h.count);
+    mkChart('trendChart',{type:'line',data:{labels:hours,datasets:[{
+      label:'Events',data:counts,borderColor:COLORS.accent,backgroundColor:COLORS.accent+'14',
+      fill:true,tension:.4,borderWidth:1.5,pointRadius:2
+    }]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor()}},y:{grid:{color:gridColor()}}}}});
+  }
+});
+window.addEventListener('geothreat:correlation', e => {
+  window._lastCorrelation = e.detail;
+  initCorrelationCharts(e.detail);
+});
+
+// ── Story cluster helpers ──────────────────────────────────────────────────────
+// Clusters have: headline, sources[], source_categories[], event_count, multi_source
+// plus: region, severity, confidence, timestamp, cluster_id, urls[]
+function evTitle(ev)   { return ev.headline || ev.title || ''; }
+function evSource(ev)  {
+  const srcs = ev.sources || (ev.source ? [ev.source] : []);
+  if (!srcs.length) return '—';
+  if (srcs.length === 1) return srcs[0];
+  return `${srcs[0]} +${srcs.length - 1} more`;
+}
+function evSourceFull(ev) { return (ev.sources || (ev.source ? [ev.source] : [])).join(', '); }
+function evId(ev)      { return ev.cluster_id || ev.event_id || ''; }
+
+function multiSourceBadge(ev) {
+  if ((ev.event_count || 1) < 2) return '';
+  const cls = (ev.event_count || 1) >= 3 ? 'multi-source-badge confirmed' : 'multi-source-badge';
+  return `<span class="${cls}" title="${evSourceFull(ev)}">${ev.event_count} SOURCES</span>`;
+}
+
+// ── Renderers ──────────────────────────────────────────────────────────────────
+function renderFeed(events) {
+  const el = document.getElementById('feed-items');
+  if(!el) return;
+  el.innerHTML = events.slice(0,20).map(ev=>`
+    <div class="feed-item">
+      <div class="feed-sev sev-${ev.severity}"></div>
+      <div class="feed-body">
+        <div class="feed-title" title="${evTitle(ev)}">${evTitle(ev)} ${multiSourceBadge(ev)}</div>
+        <div class="feed-meta">
+          ${fmtTs(ev.timestamp, ev.region)}
+          · <span title="${evSourceFull(ev)}">${evSource(ev)}</span>
+          · <strong style="color:var(--text)">${ev.region}</strong>
+          <span class="feed-tag tag-${ev.severity}">${ev.severity.toUpperCase()}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderEventsTable(events) {
+  const tbody = document.getElementById('events-tbody');
+  if(!tbody) return;
+  const r = document.getElementById('filter-region').value;
+  const s = document.getElementById('filter-severity').value;
+  const filtered = events.filter(ev=>(!r||ev.region===r)&&(!s||ev.severity===s));
+  tbody.innerHTML = filtered.slice(0,100).map(ev=>`
+    <tr>
+      <td style="white-space:nowrap">${fmtTs(ev.timestamp, ev.region)}</td>
+      <td>${ev.region}</td>
+      <td><span class="feed-tag tag-${ev.severity}">${ev.severity.toUpperCase()}</span></td>
+      <td style="color:var(--muted)" title="${evSourceFull(ev)}">${evSource(ev)} ${multiSourceBadge(ev)}</td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${evTitle(ev)}">${evTitle(ev)}</td>
+      <td><span class="feed-tag ${confTier(ev.confidence).cls}" title="${Math.round(ev.confidence*100)}%">${confTier(ev.confidence).label}</span></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No events match filter</td></tr>';
+}
+
+function applyFilters() { renderEventsTable(allEvents); }
+
+function renderSources(sources) {
+  const el = document.getElementById('source-cards');
+  if(!el) return;
+  const online = sources.filter(s=>s.status==='online').length;
+  const err = sources.filter(s=>s.status==='error').length;
+  const srcOnline = document.getElementById('src-online');
+  const srcErr = document.getElementById('src-error');
+  if(srcOnline) srcOnline.textContent = online;
+  if(srcErr) srcErr.textContent = err;
+
+  el.innerHTML = sources.map(s=>`
+    <div class="source-card">
+      <div class="source-head">
+        <div class="source-name">${s.name}</div>
+        <div class="source-status status-${s.status||'unknown'}">${(s.status||'UNKNOWN').toUpperCase()}</div>
+      </div>
+      <div class="source-meta">Category: ${s.category} · Reliability: ${Math.round(s.reliability*100)}%</div>
+      <div class="source-meta">Events: ${s.events_collected} · Latency: ${s.latency_ms}ms · Errors: ${s.error_count}</div>
+      <div class="source-meta" style="color:var(--muted)">Last: ${s.last_checked ? new Date(s.last_checked).toISOString().substring(11,19)+' UTC' : 'Never'}</div>
+      <div class="source-bar"><div class="source-bar-fill" style="width:${s.reliability*100}%"></div></div>
+    </div>`).join('');
+}
+
+function renderRegionCards(regions) {
+  const el = document.getElementById('region-cards');
+  if(!el) return;
+  // Named regions first; Global (unclassified catch-all) rendered last with muted style
+  el.innerHTML = regions.map(r=>{
+    const isGlobal = r.region === 'Global';
+    return `<div class="region-card ${isGlobal ? 'low' : r.top_severity}" style="${isGlobal ? 'opacity:.6;' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="region-name">${isGlobal ? 'Unclassified / Global' : r.region}</div>
+        ${isGlobal
+          ? `<span class="feed-tag" style="background:rgba(100,116,139,.2);color:var(--muted);">UNCLASSIFIED</span>`
+          : `<span class="feed-tag tag-${r.top_severity}">${r.top_severity.toUpperCase()}</span>`}
+      </div>
+      <div style="font-size:.65rem;color:var(--muted);margin:.3rem 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.latest_event||'—'}</div>
+      <div class="region-stats">
+        <div class="region-stat">Events: <span>${r.event_count}</span></div>
+        <div class="region-stat" style="color:var(--critical)">Critical: <span>${r.critical||0}</span></div>
+        <div class="region-stat" style="color:var(--high)">High: <span>${r.high||0}</span></div>
+        <div class="region-stat" style="color:var(--moderate)">Moderate: <span>${r.moderate||0}</span></div>
+      </div>
+      <div style="font-size:.62rem;color:var(--muted);margin-top:.4rem;">Sources: ${(r.sources||[]).slice(0,3).join(', ')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Confidence helpers ────────────────────────────────────────────────────────
+function confTier(c) {
+  if (c >= 0.69) return { label: 'GOV VERIFIED', cls: 'conf-gov' };
+  if (c >= 0.41) return { label: 'NEWS REPORT',  cls: 'conf-news' };
+  return               { label: 'SOCIAL/UNVERIFIED', cls: 'conf-social' };
+}
+
+// ── Acknowledged alerts (persisted) ──────────────────────────────────────────
+function loadAcked() {
+  try { return new Set(JSON.parse(localStorage.getItem('aeglos-acked') || '[]')); }
+  catch { return new Set(); }
+}
+function saveAcked(set) {
+  localStorage.setItem('aeglos-acked', JSON.stringify([...set]));
+}
+let _ackedIds = loadAcked();
+
+function acknowledgeAlert(eventId, itemEl) {
+  _ackedIds.add(eventId);
+  if (_ackedIds.size > 500) {
+    const arr = [..._ackedIds];
+    _ackedIds = new Set(arr.slice(arr.length - 500));
+  }
+  saveAcked(_ackedIds);
+  if (itemEl) {
+    itemEl.classList.add('dismissing');
+    setTimeout(() => itemEl.remove(), 320);
+  }
+}
+
+// ── Personal Feed (persisted) ─────────────────────────────────────────────────
+function loadPF() {
+  try { return JSON.parse(localStorage.getItem('aeglos-pf') || '[]'); }
+  catch { return []; }
+}
+function savePF(arr) {
+  localStorage.setItem('aeglos-pf', JSON.stringify(arr));
+}
+let _pfItems = loadPF();
+
+function escalateAlert(ev, itemEl) {
+  const id = evId(ev);
+  // Don't duplicate
+  if (_pfItems.some(i => (i.cluster_id || i.event_id) === id)) {
+    acknowledgeAlert(id, itemEl);
+    return;
+  }
+  _pfItems.unshift({ ...ev, escalated_at: new Date().toISOString(), note: '' });
+  savePF(_pfItems);
+  updatePFBadge();
+  renderPersonalFeed();
+  acknowledgeAlert(id, itemEl);
+}
+
+function removePFItem(itemId) {
+  _pfItems = _pfItems.filter(i => (i.cluster_id || i.event_id) !== itemId);
+  savePF(_pfItems);
+  updatePFBadge();
+  renderPersonalFeed();
+}
+
+function savePFNote(itemId, note) {
+  const item = _pfItems.find(i => (i.cluster_id || i.event_id) === itemId);
+  if (item) { item.note = note; savePF(_pfItems); }
+}
+
+function clearPersonalFeed() {
+  if (!_pfItems.length) return;
+  if (!confirm(`Remove all ${_pfItems.length} items from your Personal Feed?`)) return;
+  _pfItems = [];
+  savePF(_pfItems);
+  updatePFBadge();
+  renderPersonalFeed();
+}
+
+function exportPersonalFeed() {
+  const blob = new Blob([JSON.stringify(_pfItems, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `aeglos-personal-feed-${new Date().toISOString().substring(0,10)}.json`;
+  a.click();
+}
+
+function updatePFBadge() {
+  const badge = document.getElementById('pf-badge');
+  if (!badge) return;
+  if (_pfItems.length > 0) {
+    badge.textContent = _pfItems.length;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderPersonalFeed() {
+  const count = document.getElementById('pf-count');
+  const container = document.getElementById('pf-items');
+  if (!container) return;
+  if (count) count.textContent = _pfItems.length
+    ? `${_pfItems.length} escalated item${_pfItems.length !== 1 ? 's' : ''}`
+    : '';
+  if (!_pfItems.length) {
+    container.innerHTML = `<div class="pf-empty">
+      No items escalated yet.<br>
+      <span style="font-size:var(--fs-xs);opacity:.6;">Use the ESCALATE button on any alert to add it here.</span>
+    </div>`;
+    return;
+  }
+  const tier = c => confTier(c);
+  container.innerHTML = _pfItems.map((ev, idx) => {
+    const t = tier(ev.confidence);
+    const id = evId(ev);
+    const urls = ev.urls || (ev.url ? [ev.url] : []);
+    const srcFull = evSourceFull(ev);
+    return `<div class="pf-item ${ev.severity}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;">
+        <div class="pf-title">${evTitle(ev)} ${multiSourceBadge(ev)}</div>
+        <span class="feed-tag ${t.cls}" style="white-space:nowrap;flex-shrink:0;">${t.label}</span>
+      </div>
+      <div class="pf-meta">
+        ${ev.region} · <span title="${srcFull}">${evSource(ev)}</span> · ${fmtTs(ev.timestamp, ev.region)}
+        · <span class="feed-tag tag-${ev.severity}">${ev.severity.toUpperCase()}</span>
+        · ${Math.round(ev.confidence*100)}% conf
+        · Escalated ${fmtTs(ev.escalated_at, ev.region)}
+      </div>
+      ${ev.description ? `<div style="font-size:var(--fs-xs);color:var(--muted);margin:.4rem 0;">${ev.description.substring(0,300)}${ev.description.length>300?'…':''}</div>` : ''}
+      ${urls.length ? `<div style="font-size:var(--fs-xs);margin-bottom:.4rem;">${urls.slice(0,3).map(u=>`<a href="${u}" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:.5rem;">↗ Source</a>`).join('')}</div>` : ''}
+      <div class="pf-note-wrap">
+        <textarea class="pf-note" placeholder="Analyst notes…" oninput="savePFNote('${id}', this.value)">${ev.note || ''}</textarea>
+      </div>
+      <div class="alert-actions" style="margin-top:.5rem;">
+        <button class="btn-remove" onclick="removePFItem('${id}')">✕ REMOVE</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlerts(events) {
+  const el = document.getElementById('alerts-container');
+  if(!el) return;
+  const alerts = events
+    .filter(e => (e.severity==='critical' || e.severity==='high') && !_ackedIds.has(evId(e)))
+    .slice(0, 20);
+
+  if (!alerts.length) {
+    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:3rem;font-size:var(--fs-sm);">No active alerts</div>';
+    return;
+  }
+
+  el.innerHTML = alerts.map(ev => {
+    const t = confTier(ev.confidence);
+    const id = evId(ev);
+    const urls = ev.urls || (ev.url ? [ev.url] : []);
+    return `<div class="alert-item ${ev.severity}" id="alert-${id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;">
+        <div class="alert-title">${evTitle(ev)} ${multiSourceBadge(ev)}</div>
+        <span class="feed-tag ${t.cls}" style="white-space:nowrap;flex-shrink:0;">${t.label} · ${Math.round(ev.confidence*100)}%</span>
+      </div>
+      <div class="alert-meta">${ev.region} · <span title="${evSourceFull(ev)}">${evSource(ev)}</span> · ${fmtTs(ev.timestamp, ev.region)}</div>
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:.4rem;">${ev.description||''}</div>
+      <div class="alert-actions">
+        <button class="btn-ack" onclick="acknowledgeAlert('${id}', document.getElementById('alert-${id}'))">✓ ACKNOWLEDGE</button>
+        <button class="btn-esc" onclick="escalateAlert(${JSON.stringify(ev).replace(/"/g,'&quot;')}, document.getElementById('alert-${id}'))">↑ ESCALATE</button>
+        ${urls.length ? `<a href="${urls[0]}" target="_blank" style="font-size:var(--fs-xs);color:var(--accent);text-decoration:none;margin-left:auto;">↗ Source</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Convergence Intelligence Chat ─────────────────────────────────────────────
+const CONV_API = 'http://localhost:8000/api/v1/convergence';
+let _convCollapsed = false;
+let _convHistory   = [];   // {role, content, parsed} — session only
+
+function toggleConvPanel() {
+  _convCollapsed = !_convCollapsed;
+  const body = document.getElementById('conv-body');
+  const icon = document.getElementById('conv-collapse-icon');
+  if (body) body.classList.toggle('collapsed', _convCollapsed);
+  if (icon) icon.textContent = _convCollapsed ? '▼ EXPAND' : '▲ COLLAPSE';
+}
+
+function convPreset(text) {
+  const inp = document.getElementById('conv-input');
+  if (inp) { inp.value = text; inp.focus(); }
+}
+
+function _convAppend(role, content, parsed) {
+  _convHistory.push({role, content, parsed});
+  _renderConvMessages();
+}
+
+function _renderConvMessages() {
+  const el = document.getElementById('conv-messages');
+  if (!el) return;
+  el.innerHTML = _convHistory.map(msg => {
+    if (msg.role === 'system') {
+      return `<div class="conv-msg system"><div class="conv-bubble">${msg.content}</div></div>`;
+    }
+    if (msg.role === 'user') {
+      return `<div class="conv-msg user">
+        <div class="conv-avatar">YOU</div>
+        <div class="conv-bubble">${_escHtml(msg.content)}</div>
+      </div>`;
+    }
+    // assistant — render structured analysis if available
+    const p = msg.parsed;
+    if (!p || p.error) {
+      const errTxt = (p && p.error) ? p.error : msg.content;
+      return `<div class="conv-msg assistant">
+        <div class="conv-avatar">AI</div>
+        <div class="conv-bubble" style="color:var(--critical);">${_escHtml(errTxt)}</div>
+      </div>`;
+    }
+    const confColor = {high:'var(--low)',medium:'var(--high)',low:'var(--critical)'}[p.confidence] || 'var(--muted)';
+    const connections = (p.key_connections||[]).map(c => {
+      const evts = (c.events||[]).join(' + ');
+      return `<li><strong>${_escHtml(evts)}</strong><br>${_escHtml(c.connection||'')} <em style="color:var(--muted);">[${c.strength||''}]</em></li>`;
+    }).join('');
+    return `<div class="conv-msg assistant">
+      <div class="conv-avatar">AI</div>
+      <div class="conv-bubble">
+        <div class="conv-analysis">
+          <div class="conv-summary">${_escHtml(p.summary||'')}</div>
+          <div class="conv-confidence">Confidence: <strong style="color:${confColor}">${(p.confidence||'').toUpperCase()}</strong>
+            &nbsp;·&nbsp; <span style="color:var(--muted);font-size:.6rem;">via ${_escHtml(p.engine||'')} · ${p.elapsed_ms||0}ms · ${p.context_events||0} events</span>
+          </div>
+          ${connections ? `<ul class="conv-connections">${connections}</ul>` : ''}
+          ${p.strategic_implications ? `<div class="conv-implications">⚡ ${_escHtml(p.strategic_implications)}</div>` : ''}
+          ${(p.recommended_monitoring||[]).length ? `<div class="conv-implications" style="color:var(--accent);">👁 Watch: ${(p.recommended_monitoring).map(_escHtml).join(' · ')}</div>` : ''}
+          ${p.analyst_note ? `<div class="conv-implications" style="font-style:italic;">Note: ${_escHtml(p.analyst_note)}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function _escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function sendConvergenceQuery() {
+  const inp  = document.getElementById('conv-input');
+  const btn  = document.getElementById('conv-send');
+  const msgs = document.getElementById('conv-messages');
+  const question = (inp ? inp.value : '').trim();
+  if (!question) return;
+
+  if (inp) inp.value = '';
+  if (btn) btn.disabled = true;
+
+  _convAppend('user', question, null);
+
+  // Thinking indicator
+  if (msgs) {
+    const thinking = document.createElement('div');
+    thinking.id = 'conv-thinking';
+    thinking.className = 'conv-msg assistant';
+    thinking.innerHTML = `<div class="conv-avatar">AI</div>
+      <div class="conv-bubble conv-thinking">Analyzing…
+        <span class="conv-thinking-dots"><span>.</span><span>.</span><span>.</span></span>
+      </div>`;
+    msgs.appendChild(thinking);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  try {
+    const r = await fetch(`${CONV_API}/query`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({question, window_hours: 12}),
+      signal: AbortSignal.timeout(130_000),
+    });
+    const data = await r.json();
+    const thinking = document.getElementById('conv-thinking');
+    if (thinking) thinking.remove();
+    _convAppend('assistant', '', data);
+  } catch(err) {
+    const thinking = document.getElementById('conv-thinking');
+    if (thinking) thinking.remove();
+    _convAppend('assistant', '', {error: `Request failed: ${err.message}`});
+  } finally {
+    if (btn) btn.disabled = false;
+    if (inp) inp.focus();
+  }
+}
+
+// ── AI Engine configuration ────────────────────────────────────────────────────
+function _loadAiPrefs() {
+  try { return JSON.parse(localStorage.getItem('aeglos-ai') || '{}'); } catch { return {}; }
+}
+function _saveAiPrefs(obj) {
+  localStorage.setItem('aeglos-ai', JSON.stringify(obj));
+}
+
+function saveAiKey(provider) {
+  const inp = document.getElementById(`ai-key-${provider}`);
+  if (!inp || !inp.value.trim()) return;
+  const prefs = _loadAiPrefs();
+  prefs[`key_${provider}`] = inp.value.trim();
+  _saveAiPrefs(prefs);
+  // Send to backend
+  fetch(`${CONV_API}/configure`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({provider, api_key: inp.value.trim(), preferred: false}),
+  }).catch(()=>{});
+  inp.value = '••••••••';
+  const conf = document.getElementById(`ai-saved-${provider}`);
+  if (conf) { conf.style.opacity='1'; setTimeout(()=>conf.style.opacity='0', 2000); }
+}
+
+function saveAiFallback() {
+  const sel = document.getElementById('ai-fallback-select');
+  if (!sel) return;
+  const provider = sel.value;
+  const prefs = _loadAiPrefs();
+  prefs.fallback = provider;
+  _saveAiPrefs(prefs);
+  fetch(`${CONV_API}/configure`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({provider, api_key: '', preferred: true}),
+  }).catch(()=>{});
+}
+
+let _pullPollTimer = null;
+
+async function checkOllamaStatus() {
+  const badge     = document.getElementById('ai-ollama-status');
+  const convBadge = document.getElementById('conv-engine-badge');
+  if (badge) { badge.textContent = 'CHECKING…'; badge.style.background='rgba(100,116,139,.15)'; badge.style.color='var(--muted)'; }
+  try {
+    const r = await fetch(`${CONV_API}/status`, {signal: AbortSignal.timeout(5000)});
+    const d = await r.json();
+    const ol = d.ollama || {};
+
+    // Update model info if backend returned it
+    if (ol.model_label) _setText('ai-model-label', ol.model_label);
+    if (ol.model_quant)  _setText('ai-model-quant',  ol.model_quant);
+    if (ol.model_size_gb) _setText('ai-model-size',  ol.model_size_gb);
+    if (ol.model_source) _setText('ai-model-source', ol.model_source);
+
+    // Binary missing warning
+    const binMissing = document.getElementById('ai-ollama-binary-missing');
+    if (binMissing) binMissing.style.display = (ol.binary_found === false) ? 'block' : 'none';
+
+    if (badge) {
+      if (ol.process_running && ol.model_present) {
+        badge.textContent = 'ONLINE'; badge.style.background='rgba(16,185,129,.15)'; badge.style.color='var(--low)';
+      } else if (ol.process_running) {
+        badge.textContent = 'RUNNING'; badge.style.background='rgba(245,158,11,.15)'; badge.style.color='var(--moderate)';
+      } else if (ol.binary_found) {
+        badge.textContent = 'OFFLINE'; badge.style.background='rgba(204,0,0,.12)'; badge.style.color='var(--critical)';
+      } else {
+        badge.textContent = 'NOT INSTALLED'; badge.style.background='rgba(100,116,139,.15)'; badge.style.color='var(--muted)';
+      }
+    }
+
+    // Show/hide download button based on model presence
+    const dlBtn = document.getElementById('ai-download-btn');
+    if (dlBtn) {
+      if (ol.model_present) {
+        dlBtn.textContent = '✓ MODEL READY';
+        dlBtn.style.background = 'rgba(16,185,129,.15)';
+        dlBtn.style.color = 'var(--low)';
+        dlBtn.style.border = '1px solid rgba(16,185,129,.3)';
+        dlBtn.disabled = true;
+      } else if (ol.pull_active) {
+        dlBtn.textContent = '⏳ DOWNLOADING…';
+        dlBtn.style.background = 'rgba(0,212,255,.1)';
+        dlBtn.style.color = 'var(--accent)';
+        dlBtn.style.border = '1px solid rgba(0,212,255,.2)';
+        dlBtn.disabled = true;
+        _startPullPoll();
+      } else {
+        dlBtn.textContent = '⬇ DOWNLOAD MODEL';
+        dlBtn.style.background = 'var(--accent)';
+        dlBtn.style.color = '#000';
+        dlBtn.style.border = 'none';
+        dlBtn.disabled = !ol.process_running;
+        dlBtn.title = ol.process_running ? '' : 'Ollama must be running to download the model';
+      }
+    }
+
+    if (convBadge) {
+      if (ol.process_running && ol.model_present) {
+        convBadge.textContent = 'OLLAMA LOCAL';
+        convBadge.style.color = 'var(--low)';
+        convBadge.style.borderColor = 'rgba(16,185,129,.3)';
+        convBadge.style.background = 'rgba(16,185,129,.1)';
+      } else {
+        const apis = d.apis_configured || {};
+        const fb   = d.preferred_fallback || '';
+        const hasApi = Object.values(apis).some(Boolean);
+        convBadge.textContent = hasApi ? `API:${fb.toUpperCase()}` : 'NO ENGINE';
+        convBadge.style.color = hasApi ? 'var(--high)' : 'var(--critical)';
+      }
+    }
+    const sel = document.getElementById('ai-fallback-select');
+    if (sel && d.preferred_fallback) sel.value = d.preferred_fallback;
+  } catch {
+    if (badge) { badge.textContent = 'UNAVAILABLE'; badge.style.background='rgba(100,116,139,.15)'; badge.style.color='var(--critical)'; }
+    if (convBadge) { convBadge.textContent = 'API OFFLINE'; convBadge.style.color='var(--critical)'; }
+  }
+}
+
+function _setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function _fmtBytes(b) {
+  if (b >= 1e9) return (b/1e9).toFixed(2) + ' GB';
+  if (b >= 1e6) return (b/1e6).toFixed(1) + ' MB';
+  if (b >= 1e3) return (b/1e3).toFixed(0) + ' KB';
+  return b + ' B';
+}
+
+async function startModelDownload() {
+  const btn = document.getElementById('ai-download-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ STARTING…'; }
+  _hideEl('ai-pull-error');
+  try {
+    const r = await fetch('/api/v1/ollama/pull', {method:'POST'});
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({detail:'Unknown error'}));
+      _showPullError(err.detail || 'Failed to start download');
+      if (btn) { btn.disabled = false; btn.textContent = '⬇ DOWNLOAD MODEL'; }
+      return;
+    }
+    _showEl('ai-pull-section');
+    _setText('ai-pull-status', 'Connecting to model registry…');
+    _setText('ai-pull-pct', '0%');
+    _setText('ai-pull-bytes', '');
+    document.getElementById('ai-pull-bar').style.width = '0%';
+    if (btn) {
+      btn.textContent = '⏳ DOWNLOADING…';
+      btn.style.background = 'rgba(0,212,255,.1)';
+      btn.style.color = 'var(--accent)';
+      btn.style.border = '1px solid rgba(0,212,255,.2)';
+    }
+    _startPullPoll();
+  } catch(e) {
+    _showPullError('Could not reach backend: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ DOWNLOAD MODEL'; }
+  }
+}
+
+function _startPullPoll() {
+  if (_pullPollTimer) return;
+  _showEl('ai-pull-section');
+  _pullPollTimer = setInterval(_pollPullProgress, 1200);
+}
+
+async function _pollPullProgress() {
+  try {
+    const r = await fetch('/api/v1/ollama/pull/progress', {signal: AbortSignal.timeout(4000)});
+    const d = await r.json();
+
+    _setText('ai-pull-status', d.pull_status || '…');
+    const pct = d.pull_pct || 0;
+    _setText('ai-pull-pct', pct.toFixed(1) + '%');
+    const bar = document.getElementById('ai-pull-bar');
+    if (bar) bar.style.width = pct + '%';
+
+    if (d.pull_completed > 0 || d.pull_total > 0) {
+      _setText('ai-pull-bytes', _fmtBytes(d.pull_completed) + ' / ' + _fmtBytes(d.pull_total));
+    }
+
+    if (d.pull_error) {
+      _showPullError(d.pull_error);
+      _stopPullPoll();
+      const btn = document.getElementById('ai-download-btn');
+      if (btn) { btn.disabled=false; btn.textContent='⬇ RETRY DOWNLOAD'; btn.style.background='var(--accent)'; btn.style.color='#000'; btn.style.border='none'; }
+      return;
+    }
+
+    if (d.pull_done || d.model_present) {
+      _stopPullPoll();
+      _setText('ai-pull-status', 'Model ready ✓');
+      _setText('ai-pull-pct', '100%');
+      if (bar) bar.style.width = '100%';
+      if (d.pull_total > 0) _setText('ai-pull-bytes', _fmtBytes(d.pull_total) + ' downloaded');
+      // Refresh full status to update badges
+      setTimeout(checkOllamaStatus, 500);
+    }
+  } catch { /* network hiccup — keep polling */ }
+}
+
+function _stopPullPoll() {
+  if (_pullPollTimer) { clearInterval(_pullPollTimer); _pullPollTimer = null; }
+}
+
+function _showEl(id) { const e=document.getElementById(id); if(e) e.style.display='block'; }
+function _hideEl(id) { const e=document.getElementById(id); if(e) e.style.display='none'; }
+function _showPullError(msg) {
+  const e = document.getElementById('ai-pull-error');
+  if (e) { e.textContent = '⚠ ' + msg; e.style.display = 'block'; }
+}
+
+function _initAiEngine() {
+  const prefs = _loadAiPrefs();
+  // Re-send saved keys to backend
+  ['claude','openai','gemini'].forEach(p => {
+    const key = prefs[`key_${p}`];
+    if (key) {
+      fetch(`${CONV_API}/configure`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({provider:p, api_key:key, preferred: prefs.fallback===p}),
+      }).catch(()=>{});
+    }
+  });
+  const sel = document.getElementById('ai-fallback-select');
+  if (sel && prefs.fallback) sel.value = prefs.fallback;
+  checkOllamaStatus();
+}
+
+// ── Initialize ────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(currentTheme);
+  updatePFBadge();
+  renderPersonalFeed();
+  _initAiEngine();
+});
+</script>
+</body>
+</html>

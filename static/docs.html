@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AEGLOS Analytics Pro — Documentation</title>
+<style>
+:root{--bg:#0a0e14;--panel:#111827;--border:#1e293b;--accent:#00d4ff;--text:#e2e8f0;--muted:#64748b;--critical:#ef4444;--low:#10b981;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;display:flex;min-height:100vh;}
+aside{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;padding:1rem 0;}
+.aside-logo{padding:.75rem 1rem 1rem;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;color:var(--accent);letter-spacing:.1em;}
+.aside-section{padding:.75rem 1rem .25rem;font-size:.58rem;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;}
+.aside-link{display:block;padding:.4rem 1rem;font-size:.7rem;color:#94a3b8;text-decoration:none;border-left:2px solid transparent;transition:all .15s;}
+.aside-link:hover{color:var(--text);border-left-color:var(--accent);}
+main{flex:1;padding:2rem;max-width:860px;}
+h1{font-size:1.6rem;font-weight:900;color:var(--accent);letter-spacing:.08em;margin-bottom:.5rem;}
+h2{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.1em;margin:2rem 0 .75rem;border-bottom:1px solid var(--border);padding-bottom:.5rem;}
+h3{font-size:.8rem;font-weight:700;color:var(--accent);letter-spacing:.08em;margin:1rem 0 .4rem;}
+p{font-size:.75rem;color:#94a3b8;line-height:1.7;margin-bottom:.75rem;}
+code{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);padding:.1rem .4rem;font-size:.72rem;border-radius:2px;color:var(--accent);}
+pre{background:var(--panel);border:1px solid var(--border);padding:1rem;font-size:.7rem;overflow-x:auto;margin:1rem 0;line-height:1.6;}
+table{width:100%;border-collapse:collapse;font-size:.72rem;margin:1rem 0;}
+th{text-align:left;padding:.4rem .75rem;font-size:.62rem;color:var(--muted);border-bottom:1px solid var(--border);letter-spacing:.1em;}
+td{padding:.4rem .75rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.endpoint{background:var(--panel);border:1px solid var(--border);padding:.75rem 1rem;margin:.5rem 0;display:flex;gap:1rem;align-items:flex-start;}
+.method{font-size:.65rem;font-weight:700;padding:.2rem .5rem;min-width:55px;text-align:center;}
+.get{background:rgba(16,185,129,.2);color:var(--low);}
+.post{background:rgba(0,212,255,.2);color:var(--accent);}
+.ep-path{font-size:.72rem;color:var(--text);font-weight:700;}
+.ep-desc{font-size:.65rem;color:var(--muted);}
+</style>
+</head>
+<body>
+<aside>
+  <div class="aside-logo">AEGLOS DOCS</div>
+  <div class="aside-section">Getting Started</div>
+  <a class="aside-link" href="#quickstart">Quick Start</a>
+  <a class="aside-link" href="#architecture">Architecture</a>
+  <div class="aside-section">Intelligence</div>
+  <a class="aside-link" href="#humint">HUMINT</a>
+  <a class="aside-link" href="#osint">OSINT Sources</a>
+  <a class="aside-link" href="#geoint">GEOINT Regions</a>
+  <div class="aside-section">API Reference</div>
+  <a class="aside-link" href="#core-api">Core Endpoints</a>
+  <a class="aside-link" href="#geothreat-api">GeoThreat API</a>
+  <div class="aside-section">System</div>
+  <a class="aside-link" href="#ml">ML Engine</a>
+  <a class="aside-link" href="#encryption">Encryption</a>
+  <a class="aside-link" href="#deployment">Deployment</a>
+  <div style="margin-top:auto;padding:1rem;border-top:1px solid var(--border);">
+    <a href="/" style="font-size:.62rem;color:var(--muted);">← Home</a>
+  </div>
+</aside>
+<main>
+  <h1>AEGLOS Analytics Pro</h1>
+  <p>Multi-Domain HUMINT/OSINT/GEOINT Intelligence Fusion Platform. Combines human intelligence patterns, open-source intelligence collection, and geospatial threat analysis with military-grade AI/ML.</p>
+
+  <h2 id="quickstart">Quick Start</h2>
+  <pre>cd ~/aeglos-analytics
+./start-dev.sh
+
+# API: http://localhost:8000
+# Web: http://localhost:5000
+# GeoThreat: http://localhost:5000/geothreat
+# API Docs: http://localhost:8000/docs</pre>
+
+  <h2 id="architecture">Architecture</h2>
+  <p>6-stage pipeline: <strong>Collection → Normalization → Classification → Analysis → Fusion → Dissemination</strong></p>
+  <table>
+    <tr><th>Component</th><th>Technology</th><th>Port</th><th>Purpose</th></tr>
+    <tr><td>API Server</td><td>FastAPI + Uvicorn</td><td>8000</td><td>REST API, ML inference, encryption</td></tr>
+    <tr><td>Web Server</td><td>Flask</td><td>5000</td><td>HTML dashboards</td></tr>
+    <tr><td>GeoThreat Pipeline</td><td>aiohttp + feedparser</td><td>—</td><td>RSS OSINT ingestion</td></tr>
+    <tr><td>ML Engine</td><td>scikit-learn</td><td>—</td><td>IsolationForest + RandomForest</td></tr>
+    <tr><td>Encryption</td><td>cryptography</td><td>—</td><td>AES-256-GCM</td></tr>
+  </table>
+
+  <h2 id="humint">HUMINT Capabilities</h2>
+  <p>Human Intelligence indicators extracted from open-source reporting:</p>
+  <ul style="font-size:.72rem;color:#94a3b8;line-height:2;padding-left:1.5rem;">
+    <li>Pattern-of-life analysis from public movement/activity data</li>
+    <li>Social network mapping from open-source social media</li>
+    <li>Sentiment and rhetoric analysis from public statements</li>
+    <li>Leadership activity indicators from press coverage</li>
+    <li>Defector/emigrant population movement indicators</li>
+  </ul>
+
+  <h2 id="osint">OSINT Sources</h2>
+  <h3>Tier 1 — Active RSS (No API key)</h3>
+  <table>
+    <tr><th>Source</th><th>Category</th><th>Reliability</th><th>Focus</th></tr>
+    <tr><td>AP News</td><td>News</td><td>97%</td><td>Global breaking news</td></tr>
+    <tr><td>BBC World</td><td>News</td><td>96%</td><td>International affairs</td></tr>
+    <tr><td>Reuters</td><td>News</td><td>97%</td><td>Wire service, conflict reporting</td></tr>
+    <tr><td>Al Jazeera</td><td>News</td><td>88%</td><td>MENA region focus</td></tr>
+    <tr><td>TASS</td><td>News</td><td>72%</td><td>Russian perspective (bias-flagged)</td></tr>
+    <tr><td>Xinhua</td><td>News</td><td>70%</td><td>Chinese perspective (bias-flagged)</td></tr>
+    <tr><td>FBI Press</td><td>Government</td><td>99%</td><td>US law enforcement</td></tr>
+    <tr><td>DoD News</td><td>Government</td><td>99%</td><td>US defense operations</td></tr>
+    <tr><td>DHS</td><td>Government</td><td>99%</td><td>Homeland security</td></tr>
+  </table>
+  <h3>Tier 2 — Configurable (API key optional)</h3>
+  <p>ACLED, GDELT, CSIS, IISS, UN OCHA, NATO, Bellingcat, Global Voices, RAND, Brookings, CFR, Stratfor, Jane's, SIPRI, ICG + 22 regional sources.</p>
+
+  <h2 id="geoint">GEOINT Regions</h2>
+  <table>
+    <tr><th>Region</th><th>Threat Level</th><th>Key Areas</th></tr>
+    <tr><td>Middle East</td><td style="color:var(--critical)">CRITICAL</td><td>Iran, Iraq, Syria, Israel/Palestine, Yemen, Gulf states</td></tr>
+    <tr><td>Eastern Europe</td><td style="color:var(--high)">HIGH</td><td>Ukraine, Russia, NATO Eastern Flank, Caucasus</td></tr>
+    <tr><td>Africa</td><td style="color:var(--high)">HIGH</td><td>Sahel, Horn of Africa, Libya, DRC</td></tr>
+    <tr><td>Southeast Asia</td><td style="color:var(--high)">HIGH</td><td>South China Sea, Philippines, Vietnam</td></tr>
+    <tr><td>East Asia</td><td style="color:#3b82f6">MODERATE</td><td>China-Taiwan, DPRK, Korean Peninsula</td></tr>
+    <tr><td>South Asia</td><td style="color:#3b82f6">MODERATE</td><td>India-Pakistan LoC, Afghanistan</td></tr>
+    <tr><td>Americas</td><td style="color:#3b82f6">MODERATE</td><td>Venezuela, Colombia, Mexico cartels</td></tr>
+    <tr><td>Global</td><td style="color:var(--low)">MONITOR</td><td>Transnational, cyber nexus</td></tr>
+  </table>
+
+  <h2 id="core-api">Core API Endpoints</h2>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/health</div><div class="ep-desc">System health check. Returns service status, ML training state, GeoThreat availability.</div></div></div>
+  <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/ingest</div><div class="ep-desc">Ingest batch of data points. Body: <code>{"data": [...]}</code> (max 100,000 points)</div></div></div>
+  <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/analyze</div><div class="ep-desc">Run ML analysis (anomaly + classification). Body: <code>{"data": [...]}</code></div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/forecast?hours=72</div><div class="ep-desc">72-hour threat forecast with confidence bands and peak windows.</div></div></div>
+  <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/encrypt</div><div class="ep-desc">AES-256-GCM encrypt. Body: <code>{"plaintext": "...", "password": "..."}</code></div></div></div>
+  <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/decrypt</div><div class="ep-desc">Decrypt AES-256-GCM payload. Body: <code>{"payload": {...}, "password": "..."}</code></div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/metrics</div><div class="ep-desc">Pipeline and ML model metrics.</div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/benchmark?points=100000</div><div class="ep-desc">Run ingestion + encryption benchmark.</div></div></div>
+
+  <h2 id="geothreat-api">GeoThreat API</h2>
+  <div class="endpoint"><span class="method post">POST</span><div><div class="ep-path">/api/v1/geothreat/ingest</div><div class="ep-desc">Trigger immediate RSS feed collection from all 9 sources.</div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/geothreat/events?limit=50&amp;region=&amp;severity=</div><div class="ep-desc">Get recent intelligence events. Optional region and severity filters.</div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/geothreat/statistics</div><div class="ep-desc">Collection statistics, severity/region distribution, source counts.</div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/geothreat/sources</div><div class="ep-desc">Status of all configured RSS sources (online/error, latency, events collected).</div></div></div>
+  <div class="endpoint"><span class="method get">GET</span><div><div class="ep-path">/api/v1/geothreat/regions</div><div class="ep-desc">Regional threat analysis with event counts by severity.</div></div></div>
+
+  <h2 id="ml">ML Engine</h2>
+  <p>Two-model pipeline trained on synthetic multi-domain intelligence feature vectors:</p>
+  <pre>Features: event_rate, severity_score, geo_spread, source_diversity,
+          temporal_cluster, confidence_avg, keyword_density, repeat_rate
+
+Anomaly Detection: IsolationForest (200 estimators, 5% contamination)
+Classification:    RandomForest (300 estimators, max_depth=12, balanced)
+Training:          5,000 synthetic samples (80/20 train/test)
+Target Accuracy:   99.7%</pre>
+
+  <h2 id="encryption">Encryption</h2>
+  <pre>Algorithm:  AES-256-GCM (authenticated encryption)
+KDF:        PBKDF2-HMAC-SHA256, 100,000 iterations
+Salt:       16 bytes random per operation
+Nonce:      12 bytes random per operation (96-bit GCM nonce)
+Auth tag:   128-bit GCM authentication tag</pre>
+
+  <h2 id="deployment">Deployment</h2>
+  <h3>Development</h3>
+  <pre>./start-dev.sh    # Start both servers
+./stop.sh         # Stop both servers</pre>
+  <h3>Production (systemd)</h3>
+  <pre>sudo cp deployment/aeglos-api.service /etc/systemd/system/
+sudo cp deployment/aeglos-web.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now aeglos-api aeglos-web</pre>
+  <h3>Docker</h3>
+  <pre>docker-compose up -d</pre>
+</main>
+</body>
+</html>

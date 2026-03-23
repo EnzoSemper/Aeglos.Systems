@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEGLOS Analytics Pro — First Run Setup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0d13;
+      --panel:    #0f1318;
+      --panel2:   #131820;
+      --border:   #1e2530;
+      --accent:   #00e5ff;
+      --text:     #c8d3e0;
+      --muted:    #64748b;
+      --critical: #ef4444;
+      --success:  #22c55e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .wordmark {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .25em;
+      color: var(--accent);
+      margin-bottom: .25rem;
+    }
+
+    .subtitle {
+      font-size: .6rem;
+      color: var(--muted);
+      letter-spacing: .15em;
+      margin-bottom: 2.5rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: .6rem;
+      font-size: .65rem;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.ok     { background: var(--success); }
+    .dot.active { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+    .dot.error  { background: var(--critical); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+
+    .model-info {
+      font-size: .58rem;
+      color: var(--muted);
+      margin-bottom: 1.2rem;
+      line-height: 1.7;
+    }
+    .model-info span { color: var(--text); }
+
+    .progress-wrap {
+      margin-bottom: .4rem;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: .6rem;
+      margin-bottom: .4rem;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width .5s ease;
+    }
+
+    .progress-fill.done { background: var(--success); }
+
+    .progress-bytes {
+      font-size: .55rem;
+      color: var(--muted);
+      margin-top: .3rem;
+    }
+
+    .error-box {
+      display: none;
+      font-size: .6rem;
+      color: var(--critical);
+      padding: .5rem .7rem;
+      background: rgba(239,68,68,.07);
+      border: 1px solid rgba(239,68,68,.2);
+      margin-top: .8rem;
+      line-height: 1.5;
+    }
+
+    .done-box {
+      display: none;
+      text-align: center;
+      padding: 1rem 0 .5rem;
+    }
+    .done-box .check { font-size: 1.5rem; color: var(--success); margin-bottom: .5rem; }
+    .done-box .msg   { font-size: .65rem; color: var(--text); margin-bottom: .3rem; }
+    .done-box .sub   { font-size: .58rem; color: var(--muted); }
+
+    .footer {
+      font-size: .55rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+      line-height: 1.7;
+    }
+
+    .classification {
+      font-size: .5rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      margin-top: 2rem;
+      opacity: .5;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="wordmark">AEGLOS ANALYTICS PRO</div>
+  <div class="subtitle">MULTI-DOMAIN HUMINT / OSINT / GEOINT FUSION PLATFORM</div>
+
+  <div class="card">
+    <div class="card-title">SYSTEM INITIALISATION</div>
+
+    <div class="status-row">
+      <div class="dot ok" id="dot-api"></div>
+      <span id="status-api">Intelligence API — online</span>
+    </div>
+    <div class="status-row">
+      <div class="dot ok" id="dot-ollama"></div>
+      <span id="status-ollama">Ollama inference engine — starting…</span>
+    </div>
+    <div class="status-row">
+      <div class="dot active" id="dot-model"></div>
+      <span id="status-model">Qwen 2.5 7B — downloading…</span>
+    </div>
+  </div>
+
+  <div class="card" id="download-card">
+    <div class="card-title">AI MODEL DOWNLOAD</div>
+
+    <div class="model-info">
+      Model&nbsp;&nbsp;&nbsp;: <span>Qwen 2.5 7B Instruct (Q4_K_M)</span><br>
+      Size&nbsp;&nbsp;&nbsp;&nbsp;: <span>~4.7 GB</span><br>
+      Purpose&nbsp;: <span>Convergence intelligence analysis</span><br>
+      Storage&nbsp;: <span>~/Library/Application Support/AEGLOS/</span>
+    </div>
+
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-header">
+        <span id="pull-status-text">Connecting to model registry…</span>
+        <span id="pull-pct-text">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-bytes" id="pull-bytes-text"></div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+    <div class="done-box" id="done-box">
+      <div class="check">✓</div>
+      <div class="msg">Model ready — redirecting to dashboard…</div>
+      <div class="sub" id="redirect-countdown"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    The intelligence dashboard (OSINT feeds, ML analysis, forecasting) is already<br>
+    running in the background. This download is required only for AI-powered<br>
+    convergence analysis. Download occurs once; subsequent launches are instant.
+  </div>
+
+  <div class="classification">UNCLASSIFIED // FOR OFFICIAL USE ONLY</div>
+
+</div>
+
+<script>
+  const POLL_MS   = 1500;
+  const API_BASE  = '';   // same-origin via Flask proxy
+
+  let _pollTimer  = null;
+  let _redirecting = false;
+
+  function fmt(bytes, total) {
+    const gb = b => (b / 1e9).toFixed(2) + ' GB';
+    const mb = b => (b / 1e6).toFixed(0) + ' MB';
+    if (!total) return bytes > 1e6 ? mb(bytes) : bytes + ' B';
+    const pct = Math.round(bytes / total * 100);
+    const size = total > 1e9 ? `${gb(bytes)} / ${gb(total)}` : `${mb(bytes)} / ${mb(total)}`;
+    return `${size}`;
+  }
+
+  function setDot(id, state) {
+    const d = document.getElementById(id);
+    if (!d) return;
+    d.className = 'dot ' + state;
+  }
+
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  async function poll() {
+    if (_redirecting) return;
+
+    let data = {};
+    try {
+      const r = await fetch('/api/v1/ollama/status', { signal: AbortSignal.timeout(4000) });
+      data = await r.json();
+    } catch {
+      // API not yet ready — keep polling
+      return;
+    }
+
+    // Ollama process status
+    if (data.process_running) {
+      setDot('dot-ollama', 'ok');
+      setText('status-ollama', 'Ollama inference engine — online');
+    }
+
+    // If model already present (e.g. user reopened /setup manually)
+    if (data.model_present && !data.pull_active) {
+      onDownloadComplete();
+      return;
+    }
+
+    // Pull progress
+    if (data.pull_active || data.pull_done) {
+      const pct   = data.pull_pct || 0;
+      const bytes = data.pull_completed || 0;
+      const total = data.pull_total || 0;
+
+      document.getElementById('progress-fill').style.width = pct + '%';
+      setText('pull-pct-text',    pct + '%');
+      setText('pull-status-text', data.pull_status || 'Downloading…');
+      setText('pull-bytes-text',  bytes > 0 ? fmt(bytes, total) : '');
+    }
+
+    if (data.pull_error) {
+      clearInterval(_pollTimer);
+      const box = document.getElementById('error-box');
+      box.style.display = 'block';
+      box.textContent = '✗ Download error: ' + data.pull_error
+        + '\n\nRestart the application to retry.';
+      setDot('dot-model', 'error');
+      setText('status-model', 'Qwen 2.5 7B — download failed');
+      return;
+    }
+
+    if (data.pull_done || data.model_present) {
+      onDownloadComplete();
+    }
+  }
+
+  function onDownloadComplete() {
+    if (_redirecting) return;
+    _redirecting = true;
+    clearInterval(_pollTimer);
+
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-fill').classList.add('done');
+    setText('pull-pct-text',    '100%');
+    setText('pull-status-text', 'Model ready');
+    setText('pull-bytes-text',  '');
+
+    setDot('dot-model', 'ok');
+    setText('status-model', 'Qwen 2.5 7B — ready');
+
+    document.getElementById('progress-wrap').style.display = 'none';
+    document.getElementById('done-box').style.display = 'block';
+
+    // Countdown and redirect
+    let secs = 3;
+    const tick = () => {
+      setText('redirect-countdown', `Redirecting in ${secs}s…`);
+      if (secs-- <= 0) {
+        window.location.href = '/geothreat';
+      } else {
+        setTimeout(tick, 1000);
+      }
+    };
+    tick();
+  }
+
+  // Start polling immediately
+  _pollTimer = setInterval(poll, POLL_MS);
+  poll();
+</script>
+</body>
+</html>
