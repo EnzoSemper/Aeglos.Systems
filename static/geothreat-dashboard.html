@@ -321,6 +321,36 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
   color:var(--accent);padding:.25rem .7rem;font-size:var(--fs-xs);cursor:pointer;
   font-family:inherit;font-weight:700;letter-spacing:.05em;transition:background .15s;}
 .social-cfg-btn:hover{background:rgba(0,212,255,.18);}
+/* Wire-mesh map */
+.map-container{position:relative;background:#050a10;border:1px solid var(--border);overflow:hidden;border-radius:1px;}
+[data-theme="light"] .map-container{background:#c8c4bc;}
+.map-canvas{width:100%;aspect-ratio:2/1;display:block;}
+.map-legend{display:flex;gap:1rem;padding:.5rem 1rem;border-top:1px solid var(--border);flex-wrap:wrap;background:var(--panel);}
+.map-legend-item{display:flex;align-items:center;gap:.4rem;font-size:var(--fs-xs);color:var(--muted);}
+.map-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* Flight tracker */
+.flight-panel{background:var(--panel);border:1px solid var(--border);padding:.75rem;}
+.flight-stats{display:flex;gap:1.5rem;margin-bottom:.75rem;flex-wrap:wrap;}
+.flight-stat{font-size:var(--fs-xs);color:var(--muted);}
+.flight-stat span{color:var(--text);font-weight:700;}
+.flight-table-wrap{max-height:220px;overflow-y:auto;}
+.flight-tag{display:inline-block;padding:.1rem .35rem;font-size:.6rem;font-weight:700;border-radius:1px;margin-left:.3rem;}
+.tag-military{background:rgba(239,68,68,.2);color:var(--critical);}
+.tag-government{background:rgba(245,158,11,.2);color:var(--high);}
+.tag-civilian{background:rgba(100,116,139,.15);color:var(--muted);}
+/* Regional drill-down */
+.region-pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem;}
+.region-pill{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:.3rem .75rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .15s;}
+.region-pill:hover{color:var(--text);border-color:var(--accent);}
+.region-pill.active{color:var(--accent);border-color:var(--accent);background:rgba(0,212,255,.08);}
+/* Social publish panel */
+.publish-panel{margin-top:.5rem;padding:.55rem .75rem;background:var(--panel2);border:1px solid var(--border);display:none;}
+.publish-panel.open{display:block;}
+.publish-platforms{display:flex;flex-wrap:wrap;gap:.75rem;margin:.35rem 0 .5rem;}
+.publish-platform-label{display:flex;align-items:center;gap:.3rem;font-size:var(--fs-xs);color:var(--text);cursor:pointer;}
+.btn-publish{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);color:var(--accent);padding:.3rem .8rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;font-weight:700;letter-spacing:.06em;transition:background .15s;}
+.btn-publish:hover{background:rgba(0,212,255,.2);}
+.publish-status{font-size:.62rem;margin-top:.35rem;min-height:.9em;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -350,6 +380,11 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
     <div class="nav-item" data-page="forecast"><span class="icon">📈</span>Forecasting</div>
     <div class="nav-item" data-page="patterns"><span class="icon">🔍</span>Patterns</div>
     <div class="nav-item" data-page="correlations"><span class="icon">⚡</span>Correlations</div>
+    <div class="nav-item" data-page="regional"><span class="icon">🌍</span>Regional</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Maps</div>
+    <div class="nav-item" data-page="livemap"><span class="icon">🗾</span>Live Map</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">My Intelligence</div>
@@ -629,6 +664,92 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
       </div>
     </div>
 
+    <!-- Page: Regional Drill-down (under Analysis) -->
+    <div class="page" id="page-regional">
+      <div class="region-pills" id="regional-pills"><!-- populated by JS --></div>
+      <div class="stat-row">
+        <div class="stat-card c"><div class="stat-val" id="rs-events">—</div><div class="stat-lbl">Total Events</div></div>
+        <div class="stat-card c"><div class="stat-val" id="rs-critical">—</div><div class="stat-lbl">Critical</div><div class="stat-sub" style="color:var(--critical);">Immediate threat</div></div>
+        <div class="stat-card h"><div class="stat-val" id="rs-high">—</div><div class="stat-lbl">High</div></div>
+        <div class="stat-card m"><div class="stat-val" id="rs-moderate">—</div><div class="stat-lbl">Moderate</div></div>
+      </div>
+      <div class="chart-grid-2" style="margin-bottom:1rem;">
+        <div class="chart-box">
+          <h3>Severity Distribution</h3>
+          <canvas id="regionalDetailSevChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Event Timeline (last 24h)</h3>
+          <canvas id="regionalDetailTrendChart"></canvas>
+        </div>
+      </div>
+      <div style="background:var(--panel);border:1px solid var(--border);overflow-x:auto;">
+        <table class="intel-table">
+          <thead><tr>
+            <th>TIME</th><th>SEVERITY</th><th>SOURCE</th><th>HEADLINE</th><th>INTEL TIER</th>
+          </tr></thead>
+          <tbody id="regional-events-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted);">Select a region above</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Page: Live Map -->
+    <div class="page" id="page-livemap">
+      <div style="display:flex;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center;">
+        <div style="flex:1;">
+          <div style="font-size:var(--fs-lg);font-weight:700;font-family:'IBM Plex Sans',monospace;">Live Intelligence Map</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;">Wire-mesh Mercator · Live events · ADS-B flight intelligence</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:var(--fs-xs);color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="map-show-events" checked style="accent-color:var(--accent);"/> Events
+        </label>
+        <label style="display:flex;align-items:center;gap:.4rem;font-size:var(--fs-xs);color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="map-show-flights" checked style="accent-color:var(--accent);"/> Flights
+        </label>
+        <button onclick="refreshFlights()" style="background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:.3rem .8rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;letter-spacing:.06em;">↺ Refresh Flights</button>
+      </div>
+      <div class="map-container" style="margin-bottom:.75rem;">
+        <canvas id="worldMapCanvas" class="map-canvas"></canvas>
+      </div>
+      <div class="map-legend">
+        <div style="font-size:var(--fs-xs);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-right:.5rem;">Events:</div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--critical);box-shadow:0 0 5px var(--critical);"></div>Critical</div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--high);box-shadow:0 0 5px var(--high);"></div>High</div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--moderate);box-shadow:0 0 5px var(--moderate);"></div>Moderate</div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--low);box-shadow:0 0 5px var(--low);"></div>Low</div>
+        <div style="font-size:var(--fs-xs);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin:0 .5rem 0 1.5rem;">Flights:</div>
+        <div class="map-legend-item"><div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid var(--critical);display:inline-block;margin-right:.3rem;"></div><span style="color:var(--critical)">Military</span></div>
+        <div class="map-legend-item"><div style="width:7px;height:7px;background:var(--high);display:inline-block;margin-right:.3rem;"></div><span style="color:var(--high)">Government</span></div>
+        <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--accent);opacity:.5;"></div>Civilian</div>
+      </div>
+      <div class="flight-panel" style="margin-top:.75rem;">
+        <h3 style="font-size:var(--fs-xs);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);">
+          Flight Intelligence <span id="flight-source-tag" style="color:var(--accent);font-size:.6rem;margin-left:.5rem;">OpenSky Network (ADS-B)</span>
+        </h3>
+        <div class="flight-stats">
+          <div class="flight-stat">Airborne Tracked: <span id="flight-total">—</span></div>
+          <div class="flight-stat">Military Tagged: <span id="flight-military" style="color:var(--critical);">—</span></div>
+          <div class="flight-stat">Government Tagged: <span id="flight-gov" style="color:var(--high);">—</span></div>
+          <div class="flight-stat">Last Update: <span id="flight-updated">—</span></div>
+        </div>
+        <div class="flight-table-wrap">
+          <table class="intel-table" style="font-size:var(--fs-xs);">
+            <thead><tr>
+              <th>CALLSIGN</th><th>COUNTRY</th><th>ALT (ft)</th><th>SPEED (kts)</th><th>POSITION</th><th>TAG</th>
+            </tr></thead>
+            <tbody id="flight-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--muted);">Click Refresh Flights to fetch live ADS-B data</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:.6rem;color:var(--muted);margin-top:.5rem;border-top:1px solid var(--border);padding-top:.4rem;">
+          Source: <strong>OpenSky Network</strong> (opensky-network.org) — Community-contributed ADS-B. Military tagging uses callsign prefix lookup and is approximate. Anonymous rate limit: 1 request/10s.
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -872,7 +993,11 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     const page = document.getElementById('page-' + item.dataset.page);
-    if (page) page.classList.add('active');
+    if (page) {
+      page.classList.add('active');
+      if (item.dataset.page === 'livemap')  { drawWorldMap(Date.now()/1000); }
+      if (item.dataset.page === 'regional') { initRegionalPills(); renderRegionalDrilldown(); }
+    }
   });
 });
 
@@ -1686,6 +1811,8 @@ window.addEventListener('geothreat:events', e => {
   const el = document.getElementById('stat-critical');
   if (el) el.textContent = critCount || '—';
   renderReports(window._lastStats, allEvents, window._lastRegions);
+  if (document.getElementById('page-regional')?.classList.contains('active')) renderRegionalDrilldown();
+  if (document.getElementById('page-livemap')?.classList.contains('active'))  drawWorldMap(Date.now()/1000);
 });
 
 window.addEventListener('geothreat:sources', e => {
@@ -1961,6 +2088,13 @@ function renderPersonalFeed() {
       </div>
       <div class="alert-actions" style="margin-top:.5rem;">
         <button class="btn-remove" onclick="removePFItem('${id}')">✕ REMOVE</button>
+        <button class="btn-publish" onclick="togglePublishPanel('${id}')">↗ PUBLISH</button>
+      </div>
+      <div class="publish-panel" id="pub-${id}">
+        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem;">Publish analyst note to:</div>
+        <div class="publish-platforms" id="pub-plat-${id}"></div>
+        <button class="btn-publish" style="margin-top:.35rem;" onclick="submitPublish('${id}')">↗ POST NOW</button>
+        <div class="publish-status" id="pub-status-${id}"></div>
       </div>
     </div>`;
   }).join('');
@@ -2348,12 +2482,487 @@ function _initAiEngine() {
   checkOllamaStatus();
 }
 
+// ── Wire-mesh Mercator Map ────────────────────────────────────────────────────
+
+// Region center coordinates [lon, lat]
+const REGION_MAP_COORDS = {
+  'Middle East':          [ 42,  28],
+  'Eastern Europe':       [ 32,  50],
+  'East Asia':            [116,  35],
+  'Southeast Asia':       [108,  10],
+  'South Asia':           [ 78,  22],
+  'Africa':               [ 22,   5],
+  'Americas':             [-78,   5],
+  'Australia & Pacific':  [135, -25],
+  'Global':               [  0,  20],
+};
+const REGION_ABBR_MAP = {
+  'Middle East':'ME','Eastern Europe':'EE','East Asia':'EA',
+  'Southeast Asia':'SEA','South Asia':'SA','Africa':'AF',
+  'Americas':'AM','Australia & Pacific':'AU','Global':'GL',
+};
+
+// Mercator projection, lat clamped to [-60, 80]
+function _mxy(lon, lat, w, h) {
+  lat = Math.max(-60, Math.min(80, lat));
+  const x = (lon + 180) / 360 * w;
+  const toMerc = l => Math.log(Math.tan(Math.PI/4 + l * Math.PI/360));
+  const n    = toMerc(lat);
+  const nMin = toMerc(-60);
+  const nMax = toMerc(80);
+  const y = h - (n - nMin) / (nMax - nMin) * h;
+  return {x, y};
+}
+
+let _mapAnimTimer = null;
+
+function startMapAnimation() {
+  if (_mapAnimTimer) return;
+  _mapAnimTimer = setInterval(() => {
+    if (document.getElementById('page-livemap')?.classList.contains('active')) {
+      drawWorldMap(Date.now() / 1000);
+    }
+  }, 120); // ~8fps pulse
+}
+
+function drawWorldMap(timeSec) {
+  const canvas = document.getElementById('worldMapCanvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.floor(rect.width);
+  const h = Math.floor(rect.height);
+  if (!w || !h) return;
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  const ctx = canvas.getContext('2d');
+  const isLight = currentTheme === 'light';
+  const phase = (timeSec !== undefined) ? (timeSec % 3) / 3 : 0;
+  const pulseScale = 1 + 0.28 * Math.sin(phase * 2 * Math.PI);
+
+  // Background
+  ctx.fillStyle = isLight ? '#c4c0b8' : '#040810';
+  ctx.fillRect(0, 0, w, h);
+
+  // Wire-mesh grid lines
+  const gridCol  = isLight ? 'rgba(0,60,140,.18)' : 'rgba(0,212,255,.13)';
+  const gridBold = isLight ? 'rgba(0,60,140,.35)' : 'rgba(0,212,255,.30)';
+  ctx.lineWidth = 0.5;
+
+  // Every 30° longitude
+  for (let lon = -180; lon <= 180; lon += 30) {
+    const {x} = _mxy(lon, 0, w, h);
+    ctx.strokeStyle = (lon === 0) ? gridBold : gridCol;
+    ctx.lineWidth   = (lon === 0) ? 1 : 0.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  // Every 30° latitude
+  for (let lat = -60; lat <= 80; lat += 30) {
+    const {y} = _mxy(0, lat, w, h);
+    ctx.strokeStyle = (lat === 0) ? gridBold : gridCol;
+    ctx.lineWidth   = (lat === 0) ? 1 : 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  // Extra 15° grid for denser mesh feel
+  ctx.strokeStyle = isLight ? 'rgba(0,60,140,.07)' : 'rgba(0,212,255,.05)';
+  ctx.lineWidth = 0.3;
+  for (let lon = -180; lon <= 180; lon += 15) {
+    if (lon % 30 === 0) continue;
+    const {x} = _mxy(lon, 0, w, h);
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let lat = -45; lat <= 75; lat += 15) {
+    if (lat % 30 === 0) continue;
+    const {y} = _mxy(0, lat, w, h);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Lat/lon labels
+  const labelCol = isLight ? 'rgba(0,60,140,.4)' : 'rgba(0,212,255,.32)';
+  ctx.fillStyle = labelCol;
+  ctx.font = `${Math.max(7, Math.min(10, w/120))}px 'IBM Plex Mono',monospace`;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  for (let lat = -60; lat <= 80; lat += 30) {
+    if (lat === 0) continue;
+    const {y} = _mxy(0, lat, w, h);
+    ctx.fillText(`${lat > 0 ? '+' : ''}${lat}°`, 3, y + 2);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  for (let lon = -180; lon <= 180; lon += 60) {
+    const {x} = _mxy(lon, 0, w, h);
+    ctx.fillText(`${lon}°`, x, h - 2);
+  }
+
+  // Event LEDs — aggregate by region
+  const showEvts = document.getElementById('map-show-events')?.checked !== false;
+  if (showEvts) {
+    const groups = {};
+    for (const ev of (allEvents || [])) {
+      const r = ev.region || 'Global';
+      if (!groups[r]) groups[r] = {c:0,h:0,m:0,l:0};
+      if (ev.severity === 'critical') groups[r].c++;
+      else if (ev.severity === 'high') groups[r].h++;
+      else if (ev.severity === 'moderate') groups[r].m++;
+      else groups[r].l++;
+    }
+    for (const [region, cnt] of Object.entries(groups)) {
+      const coords = REGION_MAP_COORDS[region];
+      if (!coords) continue;
+      const {x, y} = _mxy(coords[0], coords[1], w, h);
+      const total = cnt.c + cnt.h + cnt.m + cnt.l;
+      const topSev = cnt.c > 0 ? 'critical' : cnt.h > 0 ? 'high' : cnt.m > 0 ? 'moderate' : 'low';
+      const color  = COLORS[topSev];
+      const baseR  = Math.min(4 + Math.log1p(total) * 3.5, 20);
+      const r      = baseR * pulseScale;
+
+      // Outer glow ring
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
+      grad.addColorStop(0,   color + 'bb');
+      grad.addColorStop(0.5, color + '44');
+      grad.addColorStop(1,   color + '00');
+      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI*2);
+      ctx.fillStyle = grad; ctx.fill();
+
+      // Core dot
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = color; ctx.fill();
+
+      // Count label
+      if (total > 0) {
+        const fs = Math.max(7, Math.min(11, r * 0.9));
+        ctx.font = `bold ${fs}px 'IBM Plex Mono',monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#000'; ctx.fillText(total, x, y);
+      }
+
+      // Region abbreviation below dot
+      const abbr = REGION_ABBR_MAP[region] || region;
+      ctx.font = `${Math.max(7, Math.min(9, w/140))}px 'IBM Plex Mono',monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillStyle = color + 'cc';
+      ctx.fillText(abbr, x, y + r + 2);
+    }
+  }
+
+  // Flight dots
+  const showFlts = document.getElementById('map-show-flights')?.checked !== false;
+  if (showFlts) {
+    for (const f of (window._lastFlights || [])) {
+      if (f.lon === null || f.lat === null) continue;
+      const p = _mxy(f.lon, f.lat, w, h);
+      ctx.globalAlpha = f.tag === 'military' ? 0.9 : f.tag === 'government' ? 0.75 : 0.2;
+      if (f.tag === 'military') {
+        // Small upward triangle
+        const sz = 3.5;
+        ctx.fillStyle = COLORS.critical;
+        ctx.beginPath();
+        ctx.moveTo(p.x,      p.y - sz);
+        ctx.lineTo(p.x + sz, p.y + sz);
+        ctx.lineTo(p.x - sz, p.y + sz);
+        ctx.closePath(); ctx.fill();
+      } else if (f.tag === 'government') {
+        ctx.fillStyle = COLORS.high;
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+      } else {
+        ctx.fillStyle = COLORS.accent;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── Flight Tracker (OpenSky Network ADS-B) ────────────────────────────────────
+
+const MILITARY_CALL_PREFIXES = [
+  'RCH','REACH','SAM','PAT','VIPER','RAVEN','SHADOW','REAPER','SENTRY','IRON',
+  'EAGLE','TOPGUN','RFR','COMET','ASCOT','TARTAN','COTAM','CTM','GAF','VMC',
+  'HKN','AMC','MARLIN','BRAVO','USMC','TROLL','DOOM','HAVOC','DARKSTAR',
+  'WOLF','SNAKE','COBRA','TITAN','ATLAS','SIRIUS','BOXER','SPARTAN',
+];
+const GOVT_CALL_PREFIXES = ['EXEC','EAM','VIP','VENUS','SHIELD','GOVT','ANGEL','FORCE ONE'];
+
+function _tagFlight(callsign) {
+  if (!callsign) return 'civilian';
+  const cs = callsign.trim().toUpperCase();
+  if (MILITARY_CALL_PREFIXES.some(p => cs.startsWith(p))) return 'military';
+  if (GOVT_CALL_PREFIXES.some(p => cs.includes(p)))       return 'government';
+  return 'civilian';
+}
+
+async function refreshFlights() {
+  const tbody = document.getElementById('flight-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--muted);">Querying OpenSky Network…</td></tr>';
+  try {
+    const resp = await fetch('https://opensky-network.org/api/states/all', {
+      signal: AbortSignal.timeout(18000),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} — OpenSky may be rate-limiting`);
+    const data = await resp.json();
+    const states = (data.states || []).filter(s => s[5] !== null && s[6] !== null && !s[8]);
+
+    const flights = states.map(s => ({
+      icao24:   s[0],
+      callsign: (s[1] || '').trim(),
+      country:  s[2] || '',
+      lon:      s[5],
+      lat:      s[6],
+      alt_m:    s[7],
+      speed_ms: s[9],
+      tag:      _tagFlight((s[1] || '').trim()),
+    }));
+
+    const military   = flights.filter(f => f.tag === 'military');
+    const government = flights.filter(f => f.tag === 'government');
+    const civilian   = flights.filter(f => f.tag === 'civilian');
+
+    // Store for map: all mil/gov + up to 600 civilian
+    window._lastFlights = [...military, ...government, ...civilian.slice(0, 600)];
+
+    const el = id => document.getElementById(id);
+    if (el('flight-total'))    el('flight-total').textContent    = flights.length.toLocaleString();
+    if (el('flight-military')) el('flight-military').textContent = military.length;
+    if (el('flight-gov'))      el('flight-gov').textContent      = government.length;
+    if (el('flight-updated'))  el('flight-updated').textContent  = new Date().toISOString().substring(11,19) + ' UTC';
+
+    // Table: all tagged + first 25 civilian
+    const tableRows = [...military, ...government, ...civilian.slice(0, 25)];
+    if (tbody) {
+      tbody.innerHTML = tableRows.slice(0, 60).map(f => {
+        const altFt  = f.alt_m   ? Math.round(f.alt_m   * 3.28084).toLocaleString() : '—';
+        const spdKts = f.speed_ms? Math.round(f.speed_ms * 1.944).toLocaleString()   : '—';
+        const tagCls = f.tag === 'military' ? 'tag-military' : f.tag === 'government' ? 'tag-government' : 'tag-civilian';
+        return `<tr>
+          <td style="font-weight:700">${escHtml(f.callsign || f.icao24)}</td>
+          <td style="color:var(--muted)">${escHtml(f.country)}</td>
+          <td>${altFt}</td>
+          <td>${spdKts}</td>
+          <td style="color:var(--muted);font-size:.6rem;">${f.lat.toFixed(2)},${f.lon.toFixed(2)}</td>
+          <td><span class="flight-tag ${tagCls}">${f.tag.toUpperCase()}</span></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--muted);">No tagged aircraft detected</td></tr>';
+    }
+
+    // Redraw map with new flight positions
+    drawWorldMap(Date.now()/1000);
+
+  } catch(e) {
+    const msg = e.name === 'TimeoutError' ? 'Request timed out (18s)' : escHtml(e.message);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:1.5rem;">
+      <span style="color:var(--critical)">Flight fetch failed: ${msg}</span><br>
+      <span style="font-size:.6rem;color:var(--muted)">OpenSky Network limits anonymous requests to 1/10s. Wait and try again.</span>
+    </td></tr>`;
+  }
+}
+
+// ── Regional Drill-down ────────────────────────────────────────────────────────
+
+const REGIONS_ALL = [
+  'Middle East','Eastern Europe','East Asia','Southeast Asia',
+  'South Asia','Africa','Americas','Australia & Pacific','Global',
+];
+let _selectedRegion = 'Middle East';
+
+function initRegionalPills() {
+  const container = document.getElementById('regional-pills');
+  if (!container) return;
+  container.innerHTML = REGIONS_ALL.map(r =>
+    `<button class="region-pill${r === _selectedRegion ? ' active' : ''}" onclick="selectRegion('${r}')">${r}</button>`
+  ).join('');
+}
+
+function selectRegion(region) {
+  _selectedRegion = region;
+  document.querySelectorAll('.region-pill').forEach(p =>
+    p.classList.toggle('active', p.textContent === region)
+  );
+  renderRegionalDrilldown();
+}
+
+function renderRegionalDrilldown() {
+  const events = (allEvents || []).filter(ev => ev.region === _selectedRegion);
+  const cnt = {critical:0, high:0, moderate:0, low:0};
+  events.forEach(ev => { cnt[ev.severity] = (cnt[ev.severity]||0)+1; });
+
+  const el = id => document.getElementById(id);
+  if (el('rs-events'))   el('rs-events').textContent   = events.length || '0';
+  if (el('rs-critical')) el('rs-critical').textContent = cnt.critical || '0';
+  if (el('rs-high'))     el('rs-high').textContent     = cnt.high     || '0';
+  if (el('rs-moderate')) el('rs-moderate').textContent = cnt.moderate || '0';
+
+  // Severity chart
+  const sevData = Object.entries(cnt).filter(([,v])=>v>0);
+  if (sevData.length) {
+    mkChart('regionalDetailSevChart',{
+      type:'doughnut',
+      data:{
+        labels: sevData.map(([k])=>k.charAt(0).toUpperCase()+k.slice(1)),
+        datasets:[{data: sevData.map(([,v])=>v), backgroundColor: sevData.map(([k])=>COLORS[k]), borderWidth:0}]
+      },
+      options:{plugins:{legend:{position:'bottom'}},cutout:'60%'}
+    });
+  }
+
+  // Hourly timeline
+  const hourMap = {};
+  events.forEach(ev => {
+    try {
+      const h = new Date(ev.timestamp).toISOString().substring(0,13);
+      hourMap[h] = (hourMap[h]||0)+1;
+    } catch {}
+  });
+  const hourEntries = Object.entries(hourMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-24);
+  if (hourEntries.length) {
+    mkChart('regionalDetailTrendChart',{
+      type:'bar',
+      data:{
+        labels: hourEntries.map(([h])=>h.substring(11)+':00'),
+        datasets:[{
+          label:'Events', data: hourEntries.map(([,v])=>v),
+          backgroundColor:'rgba(0,212,255,.4)', borderColor:COLORS.accent, borderWidth:1,
+        }]
+      },
+      options:{plugins:{legend:{display:false}},scales:{x:{grid:{color:gridColor()}},y:{grid:{color:gridColor()},ticks:{precision:0}}}}
+    });
+  }
+
+  // Events table
+  const tbody = document.getElementById('regional-events-tbody');
+  if (!tbody) return;
+  if (!events.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted);">No events for ${_selectedRegion}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = events.slice(0,100).map(ev => {
+    const t = confTier(ev.confidence);
+    return `<tr>
+      <td style="white-space:nowrap">${fmtTs(ev.timestamp, ev.region)}</td>
+      <td><span class="feed-tag tag-${ev.severity}">${ev.severity.toUpperCase()}</span></td>
+      <td style="color:var(--muted)" title="${evSourceFull(ev)}">${evSource(ev)} ${multiSourceBadge(ev)}</td>
+      <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(evTitle(ev))}">${evTitle(ev)}</td>
+      <td><span class="feed-tag ${t.cls}">${t.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Analyst Comments → Social Media Publish ───────────────────────────────────
+
+function togglePublishPanel(itemId) {
+  const panel = document.getElementById(`pub-${itemId}`);
+  if (!panel) return;
+  const opening = !panel.classList.contains('open');
+  if (opening) {
+    const platEl = document.getElementById(`pub-plat-${itemId}`);
+    if (platEl) platEl.innerHTML = _buildPublishPlatforms(itemId);
+  }
+  panel.classList.toggle('open', opening);
+}
+
+function _buildPublishPlatforms(itemId) {
+  const sc  = loadSocialConfig();
+  const out = [];
+  if (sc.bluesky?.app_password && sc.bluesky?.identifier) {
+    out.push(`<label class="publish-platform-label">
+      <input type="checkbox" id="pub-bsky-${itemId}" checked style="accent-color:var(--accent);"/>
+      🦋 BlueSky <span style="color:var(--muted);font-size:.6rem;">${escHtml(sc.bluesky.identifier)}</span>
+    </label>`);
+  }
+  if (sc.telegram?.bot_token && (sc.telegram?.channels||[]).length) {
+    out.push(`<label class="publish-platform-label">
+      <input type="checkbox" id="pub-tg-${itemId}" checked style="accent-color:var(--accent);"/>
+      ✈ Telegram <span style="color:var(--muted);font-size:.6rem;">${sc.telegram.channels.length} channel${sc.telegram.channels.length!==1?'s':''}</span>
+    </label>`);
+  }
+  if (sc.twitter?.bearer_token) {
+    out.push(`<div style="color:var(--muted);font-size:.6rem;padding:.15rem 0;">
+      🐦 Twitter/X — posting requires OAuth 2.0 user context (bearer token is read-only).
+    </div>`);
+  }
+  if (!out.length) {
+    return `<div style="font-size:.65rem;color:var(--muted);">No platforms configured. Go to ⚙ User Preferences → Social.</div>`;
+  }
+  return out.join('');
+}
+
+async function submitPublish(itemId) {
+  const item = _pfItems.find(i => (i.cluster_id || i.event_id) === itemId);
+  if (!item) return;
+  const statusEl = document.getElementById(`pub-status-${itemId}`);
+  const sc = loadSocialConfig();
+  const note = item.note || '';
+  const headline = evTitle(item);
+  const sev    = (item.severity || '').toUpperCase();
+  const region = item.region || 'Global';
+  const postText = `[AEGLOS INTEL] ${sev} — ${region}\n${headline}${note ? '\n\nAnalyst Note: ' + note : ''}\n#AEGLOSIntel #GeoThreat`.substring(0, 500);
+  const results = [];
+
+  if (document.getElementById(`pub-bsky-${itemId}`)?.checked && sc.bluesky?.app_password) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--muted)">Posting to BlueSky…</span>';
+    results.push({ platform: 'BlueSky', ...await _postBlueSky(postText, sc.bluesky) });
+  }
+  if (document.getElementById(`pub-tg-${itemId}`)?.checked && sc.telegram?.bot_token) {
+    for (const ch of (sc.telegram.channels || [])) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--muted)">Posting to Telegram…</span>';
+      results.push({ platform: `Telegram (${ch})`, ...await _postTelegram(postText, sc.telegram.bot_token, ch) });
+    }
+  }
+  if (!results.length) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--high)">No platforms selected.</span>';
+    return;
+  }
+  if (statusEl) {
+    statusEl.innerHTML = results.map(r =>
+      `<span style="color:${r.ok ? 'var(--low)' : 'var(--critical)'};margin-right:.5rem;">${r.ok ? '✓' : '✗'} ${r.platform}${r.ok ? '' : ': ' + escHtml(r.error||'failed')}</span>`
+    ).join('');
+  }
+}
+
+async function _postBlueSky(text, cfg) {
+  try {
+    const sessR = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({identifier: cfg.identifier, password: cfg.app_password}),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!sessR.ok) { const e = await sessR.json().catch(()=>({})); return {ok:false, error:e.message||'Auth failed'}; }
+    const sess = await sessR.json();
+    const pds  = sess.didDoc?.service?.find(s=>s.type==='AtprotoPersonalDataServer')?.serviceEndpoint || 'https://bsky.social';
+    const recR = await fetch(`${pds}/xrpc/com.atproto.repo.createRecord`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${sess.accessJwt}`},
+      body: JSON.stringify({
+        repo: sess.did, collection: 'app.bsky.feed.post',
+        record: {'$type':'app.bsky.feed.post', text: text.substring(0,300), createdAt: new Date().toISOString(), langs:['en']},
+      }),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!recR.ok) { const e = await recR.json().catch(()=>({})); return {ok:false, error:e.message||'Post failed'}; }
+    return {ok:true};
+  } catch(e) { return {ok:false, error:e.message}; }
+}
+
+async function _postTelegram(text, token, channel) {
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: channel, text}),
+      signal: AbortSignal.timeout(12000),
+    });
+    const d = await resp.json();
+    return d.ok ? {ok:true} : {ok:false, error:d.description||'Failed'};
+  } catch(e) { return {ok:false, error:e.message}; }
+}
+
 // ── Initialize ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   applyTheme(currentTheme);
   updatePFBadge();
   renderPersonalFeed();
   _initAiEngine();
+  initRegionalPills();
+  startMapAnimation();
 });
 </script>
 </body>
