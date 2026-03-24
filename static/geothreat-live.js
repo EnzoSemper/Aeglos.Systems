@@ -35,7 +35,7 @@ function showSectionError(elementId, message) {
 // ── API helpers ───────────────────────────────────────────────────────────────
 async function checkApiAvailability() {
   try {
-    const r = await fetch('/health', { signal: AbortSignal.timeout(3000) });
+    const r = await fetch('/health', { signal: AbortSignal.timeout(15000) });
     return r.ok;
   } catch {
     return false;

@@ -321,10 +321,46 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
   color:var(--accent);padding:.25rem .7rem;font-size:var(--fs-xs);cursor:pointer;
   font-family:inherit;font-weight:700;letter-spacing:.05em;transition:background .15s;}
 .social-cfg-btn:hover{background:rgba(0,212,255,.18);}
-/* Wire-mesh map */
-.map-container{position:relative;background:#050a10;border:1px solid var(--border);overflow:hidden;border-radius:1px;}
-[data-theme="light"] .map-container{background:#c8c4bc;}
-.map-canvas{width:100%;aspect-ratio:2/1;display:block;}
+/* Live Map */
+.map-container{position:relative;border:1px solid var(--border);overflow:hidden;border-radius:1px;background:#0a1520;}
+.map-image-wrap{position:relative;width:100%;line-height:0;}
+.map-img{width:100%;height:auto;display:block;
+  filter: invert(1) hue-rotate(180deg) brightness(0.82) saturate(1.3);}
+[data-theme="light"] .map-img{filter:none;}
+.map-canvas-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+/* Event markers */
+.map-markers{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+.map-marker{position:absolute;transform:translate(-50%,-50%);pointer-events:all;cursor:pointer;}
+.map-marker-core{border-radius:50%;position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.55rem;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#000;
+  animation:mapPulse 4s ease-in-out infinite;}
+.map-marker-ring{border-radius:50%;position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);z-index:1;
+  animation:mapRing 4s ease-in-out infinite;opacity:0;}
+@keyframes mapPulse{
+  0%,100%{transform:translate(-50%,-50%) scale(1);box-shadow:0 0 5px 1px currentColor;}
+  50%{transform:translate(-50%,-50%) scale(1.14);box-shadow:0 0 12px 4px currentColor;}}
+@keyframes mapRing{
+  0%{transform:translate(-50%,-50%) scale(1);opacity:.45;}
+  65%{transform:translate(-50%,-50%) scale(2.8);opacity:0;}
+  100%{transform:translate(-50%,-50%) scale(2.8);opacity:0;}}
+/* Map tooltip */
+.map-tooltip{position:fixed;z-index:9999;pointer-events:none;
+  background:rgba(6,14,26,.97);border:1px solid var(--border);
+  padding:.6rem .8rem;min-width:220px;max-width:300px;
+  font-family:'IBM Plex Mono',monospace;font-size:.65rem;line-height:1.5;
+  box-shadow:0 4px 20px rgba(0,0,0,.7);}
+[data-theme="light"] .map-tooltip{background:rgba(240,243,248,.97);border-color:rgba(0,60,140,.3);}
+.map-tt-header{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:.35rem;padding-bottom:.3rem;border-bottom:1px solid var(--border);}
+.map-tt-counts{display:flex;gap:.7rem;margin-bottom:.4rem;flex-wrap:wrap;}
+.map-tt-count{font-size:.6rem;font-weight:700;}
+.map-tt-event{padding:.2rem 0;border-bottom:1px solid rgba(255,255,255,.05);
+  display:flex;align-items:baseline;gap:.4rem;}
+[data-theme="light"] .map-tt-event{border-bottom-color:rgba(0,0,0,.08);}
+.map-tt-badge{flex-shrink:0;font-size:.55rem;font-weight:700;padding:.05rem .3rem;border-radius:1px;}
+.map-tt-title{color:var(--text);opacity:.88;font-size:.62rem;line-height:1.4;}
 .map-legend{display:flex;gap:1rem;padding:.5rem 1rem;border-top:1px solid var(--border);flex-wrap:wrap;background:var(--panel);}
 .map-legend-item{display:flex;align-items:center;gap:.4rem;font-size:var(--fs-xs);color:var(--muted);}
 .map-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -337,6 +373,25 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
 .flight-tag{display:inline-block;padding:.1rem .35rem;font-size:.6rem;font-weight:700;border-radius:1px;margin-left:.3rem;}
 .tag-military{background:rgba(239,68,68,.2);color:var(--critical);}
 .tag-government{background:rgba(245,158,11,.2);color:var(--high);}
+/* Pattern cards */
+.pattern-card{border:1px solid var(--border);padding:.75rem 1rem;margin-bottom:.6rem;background:var(--panel2);}
+.pattern-card-top{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;}
+.pattern-type-badge{font-size:.58rem;font-weight:700;letter-spacing:.08em;padding:.15rem .45rem;
+  border-radius:1px;text-transform:uppercase;flex-shrink:0;}
+.pattern-name{font-size:.75rem;font-weight:700;flex:1;}
+.pattern-conf-wrap{display:flex;align-items:center;gap:.4rem;flex-shrink:0;}
+.pattern-conf-track{width:60px;height:5px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
+.pattern-conf-fill{height:100%;border-radius:2px;transition:width .4s;}
+.pattern-conf-pct{font-size:.65rem;font-weight:700;min-width:2.4rem;text-align:right;}
+.pattern-desc{font-size:.67rem;color:var(--muted);line-height:1.55;margin-bottom:.4rem;}
+.pattern-metrics{display:flex;gap:.5rem;flex-wrap:wrap;}
+.pattern-metric{font-size:.6rem;font-weight:700;padding:.12rem .4rem;
+  background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--accent);}
+/* Prophet stats block */
+.prophet-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin-top:.75rem;}
+.prophet-stat{background:var(--panel2);border:1px solid var(--border);padding:.5rem .75rem;}
+.prophet-stat-label{font-size:.58rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.2rem;}
+.prophet-stat-value{font-size:.78rem;font-weight:700;}
 .tag-civilian{background:rgba(100,116,139,.15);color:var(--muted);}
 /* Regional drill-down */
 .region-pills{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem;}
@@ -576,6 +631,10 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
       <div style="background:var(--panel);border:1px solid var(--border);padding:1rem;margin-top:.75rem;">
         <h3 style="font-size:.7rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.75rem;">Detected Patterns</h3>
         <div id="pattern-list"></div>
+        <div id="prophet-decomp" style="display:none;margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);">
+          <h3 style="font-size:.7rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem;">Prophet Model Analysis</h3>
+          <div class="prophet-stats-grid" id="prophet-stats-grid"></div>
+        </div>
       </div>
     </div>
 
@@ -700,18 +759,23 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
       <div style="display:flex;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center;">
         <div style="flex:1;">
           <div style="font-size:var(--fs-lg);font-weight:700;font-family:'IBM Plex Sans',monospace;">Live Intelligence Map</div>
-          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;">Wire-mesh Mercator · Live events · ADS-B flight intelligence</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:.2rem;">Live intelligence overlay · Event clusters · ADS-B flight intelligence</div>
         </div>
         <label style="display:flex;align-items:center;gap:.4rem;font-size:var(--fs-xs);color:var(--muted);cursor:pointer;">
-          <input type="checkbox" id="map-show-events" checked style="accent-color:var(--accent);"/> Events
+          <input type="checkbox" id="map-show-events" checked style="accent-color:var(--accent);" onchange="renderMapMarkers()"/> Events
         </label>
         <label style="display:flex;align-items:center;gap:.4rem;font-size:var(--fs-xs);color:var(--muted);cursor:pointer;">
-          <input type="checkbox" id="map-show-flights" checked style="accent-color:var(--accent);"/> Flights
+          <input type="checkbox" id="map-show-flights" checked style="accent-color:var(--accent);" onchange="drawFlightsOnCanvas()"/> Flights
         </label>
         <button onclick="refreshFlights()" style="background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:.3rem .8rem;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;letter-spacing:.06em;">↺ Refresh Flights</button>
       </div>
       <div class="map-container" style="margin-bottom:.75rem;">
-        <canvas id="worldMapCanvas" class="map-canvas"></canvas>
+        <div class="map-image-wrap" id="mapImageWrap">
+          <img id="worldMapImg" class="map-img" src="/static/world-map.png" alt="World Map" draggable="false">
+          <div class="map-markers" id="mapMarkersLayer"></div>
+          <canvas id="worldMapCanvas" class="map-canvas-overlay"></canvas>
+        </div>
+        <div class="map-tooltip" id="mapTooltip" style="display:none;"></div>
       </div>
       <div class="map-legend">
         <div style="font-size:var(--fs-xs);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-right:.5rem;">Events:</div>
@@ -733,6 +797,12 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
           <div class="flight-stat">Military Tagged: <span id="flight-military" style="color:var(--critical);">—</span></div>
           <div class="flight-stat">Government Tagged: <span id="flight-gov" style="color:var(--high);">—</span></div>
           <div class="flight-stat">Last Update: <span id="flight-updated">—</span></div>
+        </div>
+        <div style="margin-bottom:.5rem;">
+          <input type="search" id="flight-search" placeholder="Search callsign or country…"
+            oninput="filterFlightTable(this.value)"
+            style="width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+              padding:.3rem .6rem;font-size:var(--fs-xs);font-family:inherit;outline:none;box-sizing:border-box;"/>
         </div>
         <div class="flight-table-wrap">
           <table class="intel-table" style="font-size:var(--fs-xs);">
@@ -1010,7 +1080,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
       page.classList.add('active');
       _saveActivePage(item.dataset.page);
       // Defer map draw until browser has laid out the newly-visible canvas
-      if (item.dataset.page === 'livemap')  { requestAnimationFrame(() => drawWorldMap(Date.now()/1000)); }
+      if (item.dataset.page === 'livemap')  { requestAnimationFrame(() => { renderMapMarkers(); drawFlightsOnCanvas(); }); }
       if (item.dataset.page === 'regional') { initRegionalPills(); renderRegionalDrilldown(); }
     }
   });
@@ -1623,20 +1693,94 @@ function initPatternCharts(data) {
   },options:{plugins:{legend:{position:'bottom'}},cutout:'55%'}});
 
   const detected = data.detected_patterns || [];
-  const listEl = document.getElementById('pattern-list');
+  const decomp   = data.prophet_decomposition || null;
+  const listEl   = document.getElementById('pattern-list');
+
+  // Classify pattern type from name for badge + colour
+  function _ptype(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('trend'))    return {label:'TREND',   bg:'rgba(239,68,68,.18)',   color:'var(--critical)'};
+    if (n.includes('regime'))   return {label:'REGIME',  bg:'rgba(245,158,11,.18)',  color:'var(--high)'};
+    if (n.includes('diurnal') || n.includes('peak') || n.includes('cycle'))
+                                return {label:'CYCLE',   bg:'rgba(234,179,8,.18)',   color:'var(--moderate)'};
+    if (n.includes('spike'))    return {label:'SPIKE',   bg:'rgba(239,68,68,.18)',   color:'var(--critical)'};
+    if (n.includes('seasonal')) return {label:'SEASONAL',bg:'rgba(59,130,246,.18)', color:'#60a5fa'};
+    return                             {label:'SIGNAL',  bg:'rgba(0,212,255,.1)',    color:'var(--accent)'};
+  }
+
+  // Extract numeric metrics from description text (e.g. "+0.08 severity/hr", "20 changepoints")
+  function _extractMetrics(desc) {
+    const metrics = [];
+    const m1 = desc.match(/([+-]?\d+\.?\d*)\s*(severity\/hr|\/hr)/i);
+    if (m1) metrics.push((m1[1].startsWith('-') || m1[1].startsWith('+') ? '' : '+') + m1[1] + ' sev/hr');
+    const m2 = desc.match(/(\d+)\s*significant\s*(regime\s*changes?|changepoints?|shifts?)/i);
+    if (m2) metrics.push(m2[1] + ' changepoints');
+    const m3 = desc.match(/peaks?\s*at\s*(\d+:\d+\s*UTC)/i);
+    if (m3) metrics.push('peak ' + m3[1]);
+    const m4 = desc.match(/([\d.]+)[×x]\s*the\s*trough/i);
+    if (m4) metrics.push(m4[1] + '× amplitude');
+    const m5 = desc.match(/(\d+)\s*events?\)/);
+    if (m5) metrics.push(m5[1] + ' events at peak');
+    return metrics;
+  }
+
   if (listEl) {
     if (detected.length === 0) {
       listEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;font-size:.8rem;">Insufficient data for pattern detection — awaiting more events</div>';
     } else {
-      listEl.innerHTML = detected.map(p => `
-        <div style="border-bottom:1px solid var(--border);padding:.6rem 0;display:flex;gap:1rem;align-items:flex-start;">
-          <div style="color:var(--low);font-size:.65rem;white-space:nowrap;padding-top:.2rem;">${Math.round(p.confidence * 100)}%</div>
-          <div>
-            <div style="font-size:.72rem;font-weight:700;margin-bottom:.2rem;">${p.name}</div>
-            <div style="font-size:.65rem;color:var(--muted);">${p.desc}</div>
+      listEl.innerHTML = detected.map(p => {
+        const conf = Math.round(p.confidence * 100);
+        const confColor = conf >= 90 ? 'var(--critical)' : conf >= 75 ? 'var(--high)' : 'var(--moderate)';
+        const type    = _ptype(p.name);
+        const metrics = _extractMetrics(p.desc || '');
+        const metricsHtml = metrics.length
+          ? `<div class="pattern-metrics">${metrics.map(m => `<span class="pattern-metric">${escHtml(m)}</span>`).join('')}</div>`
+          : '';
+        return `<div class="pattern-card">
+          <div class="pattern-card-top">
+            <span class="pattern-type-badge" style="background:${type.bg};color:${type.color};">${type.label}</span>
+            <span class="pattern-name">${escHtml(p.name)}</span>
+            <div class="pattern-conf-wrap">
+              <div class="pattern-conf-track">
+                <div class="pattern-conf-fill" style="width:${conf}%;background:${confColor};"></div>
+              </div>
+              <span class="pattern-conf-pct" style="color:${confColor};">${conf}%</span>
+            </div>
           </div>
-        </div>`).join('');
+          <div class="pattern-desc">${escHtml(p.desc || '')}</div>
+          ${metricsHtml}
+        </div>`;
+      }).join('');
     }
+  }
+
+  // Prophet model decomposition stats
+  const decomEl = document.getElementById('prophet-decomp');
+  const gridEl  = document.getElementById('prophet-stats-grid');
+  if (decomEl && gridEl && decomp) {
+    const slope     = decomp.trend_slope_per_hour;
+    const slopeSign = slope >= 0 ? '+' : '';
+    const slopeColor = slope > 0.05 ? 'var(--critical)' : slope < -0.05 ? 'var(--low)' : 'var(--moderate)';
+    const dirLabel  = (decomp.trend_direction || 'stable').toUpperCase();
+    const stats = [
+      { label: 'Trend Direction', value: dirLabel,
+        color: decomp.trend_direction === 'increasing' ? 'var(--critical)' : decomp.trend_direction === 'decreasing' ? 'var(--low)' : 'var(--muted)' },
+      { label: 'Slope (sev/hr)',  value: slopeSign + slope.toFixed(4), color: slopeColor },
+      { label: 'Changepoints',    value: decomp.n_significant_changepoints ?? '—', color: 'var(--high)' },
+      { label: 'Residual σ',      value: decomp.residual_std != null ? decomp.residual_std.toFixed(2) : '—', color: 'var(--text)' },
+      { label: 'Daily Cycle',     value: decomp.uses_daily_seasonality  ? 'ACTIVE' : 'OFF',
+        color: decomp.uses_daily_seasonality  ? 'var(--accent)' : 'var(--muted)' },
+      { label: 'Weekly Cycle',    value: decomp.uses_weekly_seasonality ? 'ACTIVE' : 'OFF',
+        color: decomp.uses_weekly_seasonality ? 'var(--accent)' : 'var(--muted)' },
+    ];
+    gridEl.innerHTML = stats.map(s => `
+      <div class="prophet-stat">
+        <div class="prophet-stat-label">${escHtml(s.label)}</div>
+        <div class="prophet-stat-value" style="color:${s.color};">${escHtml(String(s.value))}</div>
+      </div>`).join('');
+    decomEl.style.display = 'block';
+  } else if (decomEl) {
+    decomEl.style.display = 'none';
   }
 }
 
@@ -1827,7 +1971,7 @@ window.addEventListener('geothreat:events', e => {
   if (el) el.textContent = critCount || '—';
   renderReports(window._lastStats, allEvents, window._lastRegions);
   if (document.getElementById('page-regional')?.classList.contains('active')) renderRegionalDrilldown();
-  if (document.getElementById('page-livemap')?.classList.contains('active'))  drawWorldMap(Date.now()/1000);
+  if (document.getElementById('page-livemap')?.classList.contains('active'))  renderMapMarkers();
 });
 
 window.addEventListener('geothreat:sources', e => {
@@ -2517,174 +2661,212 @@ const REGION_ABBR_MAP = {
   'Americas':'AM','Australia & Pacific':'AU','Global':'GL',
 };
 
-// Mercator projection, lat clamped to [-60, 80]
-function _mxy(lon, lat, w, h) {
-  lat = Math.max(-60, Math.min(80, lat));
-  const x = (lon + 180) / 360 * w;
-  const toMerc = l => Math.log(Math.tan(Math.PI/4 + l * Math.PI/360));
-  const n    = toMerc(lat);
-  const nMin = toMerc(-60);
-  const nMax = toMerc(80);
-  const y = h - (n - nMin) / (nMax - nMin) * h;
+
+
+// ── Image-based map: Mercator percentage helper ────────────────────────────────
+// Returns {x, y} as 0-100 percentages for absolute CSS positioning over the image.
+// The world-map.png is equirectangular (lon -180→+180, lat +85→-85).
+function _mxyPct(lon, lat) {
+  // Equirectangular: simple linear mapping
+  const x = (lon + 180) / 360 * 100;
+  const y = (90 - Math.max(-80, Math.min(85, lat))) / 170 * 100;
   return {x, y};
 }
 
-let _mapAnimTimer = null;
+// ── Tooltip logic ──────────────────────────────────────────────────────────────
+const _tooltip = { el: null, visible: false };
 
-function startMapAnimation() {
-  if (_mapAnimTimer) return;
-  _mapAnimTimer = setInterval(() => {
-    if (document.getElementById('page-livemap')?.classList.contains('active')) {
-      drawWorldMap(Date.now() / 1000);
-    }
-  }, 120); // ~8fps pulse
+function _showMapTooltip(e, region, groups) {
+  const tt = document.getElementById('mapTooltip');
+  if (!tt) return;
+  const cnt  = groups[region] || {c:0,h:0,m:0,l:0};
+  const total = cnt.c + cnt.h + cnt.m + cnt.l;
+  const SEV_COLOR = { critical: COLORS.critical, high: COLORS.high, moderate: COLORS.moderate, low: COLORS.low };
+  const SEV_BG    = { critical:'rgba(239,68,68,.2)', high:'rgba(245,158,11,.2)', moderate:'rgba(234,179,8,.15)', low:'rgba(107,114,128,.15)' };
+
+  // Top 5 events for this region by severity rank
+  const sevRank = {critical:0,high:1,moderate:2,low:3};
+  const regionEvts = (allEvents || [])
+    .filter(ev => (ev.region || 'Global') === region)
+    .sort((a,b) => sevRank[a.severity] - sevRank[b.severity])
+    .slice(0, 5);
+
+  const countsHtml = [
+    cnt.c ? `<span class="map-tt-count" style="color:${SEV_COLOR.critical}">● ${cnt.c} Critical</span>` : '',
+    cnt.h ? `<span class="map-tt-count" style="color:${SEV_COLOR.high}">● ${cnt.h} High</span>` : '',
+    cnt.m ? `<span class="map-tt-count" style="color:${SEV_COLOR.moderate}">● ${cnt.m} Moderate</span>` : '',
+    cnt.l ? `<span class="map-tt-count" style="color:${SEV_COLOR.low}">● ${cnt.l} Low</span>` : '',
+  ].filter(Boolean).join('');
+
+  const evtsHtml = regionEvts.map(ev => {
+    const title = escHtml((ev.title || '').substring(0, 70)) + ((ev.title||'').length > 70 ? '…' : '');
+    return `<div class="map-tt-event">
+      <span class="map-tt-badge" style="background:${SEV_BG[ev.severity]};color:${SEV_COLOR[ev.severity]}">${ev.severity.toUpperCase()}</span>
+      <span class="map-tt-title">${title}</span>
+    </div>`;
+  }).join('');
+
+  tt.innerHTML = `
+    <div class="map-tt-header">${escHtml(region)} — ${total} event${total !== 1 ? 's' : ''}</div>
+    <div class="map-tt-counts">${countsHtml}</div>
+    ${evtsHtml || '<div style="color:var(--muted);font-size:.6rem;">No events</div>'}`;
+
+  // Position: follow mouse, flip if near right/bottom edge
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let left = e.clientX + 14, top = e.clientY + 14;
+  tt.style.display = 'block';
+  const tw = tt.offsetWidth, th = tt.offsetHeight;
+  if (left + tw > vw - 12) left = e.clientX - tw - 14;
+  if (top  + th > vh - 12) top  = e.clientY - th - 14;
+  tt.style.left = left + 'px';
+  tt.style.top  = top  + 'px';
 }
 
-function drawWorldMap(timeSec) {
+function _hideMapTooltip() {
+  const tt = document.getElementById('mapTooltip');
+  if (tt) tt.style.display = 'none';
+}
+
+// ── Render DOM event markers ───────────────────────────────────────────────────
+function renderMapMarkers() {
+  const layer = document.getElementById('mapMarkersLayer');
+  if (!layer) return;
+
+  const showEvts = document.getElementById('map-show-events')?.checked !== false;
+  if (!showEvts) { layer.innerHTML = ''; return; }
+
+  // Aggregate events by region
+  const groups = {};
+  for (const ev of (allEvents || [])) {
+    const r = ev.region || 'Global';
+    if (!groups[r]) groups[r] = {c:0,h:0,m:0,l:0};
+    if (ev.severity === 'critical')      groups[r].c++;
+    else if (ev.severity === 'high')     groups[r].h++;
+    else if (ev.severity === 'moderate') groups[r].m++;
+    else                                 groups[r].l++;
+  }
+
+  const SEV_COLOR = { critical: COLORS.critical, high: COLORS.high, moderate: COLORS.moderate, low: COLORS.low };
+  layer.innerHTML = '';
+
+  for (const [region, cnt] of Object.entries(groups)) {
+    const coords = REGION_MAP_COORDS[region];
+    if (!coords) continue;
+    const {x, y} = _mxyPct(coords[0], coords[1]);
+    const total  = cnt.c + cnt.h + cnt.m + cnt.l;
+    const topSev = cnt.c > 0 ? 'critical' : cnt.h > 0 ? 'high' : cnt.m > 0 ? 'moderate' : 'low';
+    const color  = SEV_COLOR[topSev];
+    // Dot size: 14-30px based on event count
+    const size   = Math.min(14 + Math.log1p(total) * 4, 32);
+
+    const marker = document.createElement('div');
+    marker.className = 'map-marker';
+    marker.style.cssText = `left:${x}%;top:${y}%;`;
+    marker.dataset.region = region;
+
+    // Expanding ring behind the dot
+    const ring = document.createElement('div');
+    ring.className = 'map-marker-ring';
+    ring.style.cssText = `width:${size}px;height:${size}px;border:2px solid ${color};`;
+
+    // Core dot
+    const core = document.createElement('div');
+    core.className = 'map-marker-core';
+    core.style.cssText = `width:${size}px;height:${size}px;background:${color};color:${color};`;
+    // Stagger animation phase per region so they don't all pulse together
+    const delay = (Object.keys(groups).indexOf(region) * 0.35) % 2.8;
+    core.style.animationDelay = `-${delay}s`;
+    ring.style.animationDelay = `-${delay}s`;
+    core.textContent = total > 99 ? '99+' : total;
+
+    // Label below
+    const label = document.createElement('div');
+    label.style.cssText = `position:absolute;top:calc(50% + ${size/2 + 3}px);left:50%;transform:translateX(-50%);
+      font-size:.55rem;font-weight:700;color:${color};font-family:'IBM Plex Mono',monospace;
+      letter-spacing:.05em;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.8);`;
+    label.textContent = REGION_ABBR_MAP[region] || region;
+
+    marker.appendChild(ring);
+    marker.appendChild(core);
+    marker.appendChild(label);
+
+    // Tooltip events
+    marker.addEventListener('mouseenter', e => _showMapTooltip(e, region, groups));
+    marker.addEventListener('mousemove',  e => _showMapTooltip(e, region, groups));
+    marker.addEventListener('mouseleave', _hideMapTooltip);
+
+    layer.appendChild(marker);
+  }
+
+  // Also sync canvas overlay dimensions
+  _syncFlightCanvas();
+}
+
+// ── Canvas overlay — flights only ─────────────────────────────────────────────
+function _syncFlightCanvas() {
+  const canvas = document.getElementById('worldMapCanvas');
+  const img    = document.getElementById('worldMapImg');
+  if (!canvas || !img) return;
+  const w = img.offsetWidth;
+  const h = img.offsetHeight;
+  if (w && h && (canvas.width !== w || canvas.height !== h)) {
+    canvas.width  = w;
+    canvas.height = h;
+  }
+}
+
+function drawFlightsOnCanvas() {
   const canvas = document.getElementById('worldMapCanvas');
   if (!canvas) return;
-  // getBoundingClientRect can return 0 for a just-shown element before browser layout;
-  // fall back to offsetWidth/parentElement as safety net
-  let w = Math.floor(canvas.getBoundingClientRect().width) || canvas.offsetWidth || (canvas.parentElement?.offsetWidth ?? 0);
-  let h = Math.floor(canvas.getBoundingClientRect().height) || canvas.offsetHeight || Math.floor(w / 2);
-  if (!w || !h) { requestAnimationFrame(() => drawWorldMap(timeSec)); return; }
-  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  _syncFlightCanvas();
+  const w = canvas.width, h = canvas.height;
+  if (!w || !h) return;
   const ctx = canvas.getContext('2d');
-  const isLight = currentTheme === 'light';
-  const phase = (timeSec !== undefined) ? (timeSec % 3) / 3 : 0;
-  const pulseScale = 1 + 0.28 * Math.sin(phase * 2 * Math.PI);
+  ctx.clearRect(0, 0, w, h);
 
-  // Background
-  ctx.fillStyle = isLight ? '#c4c0b8' : '#040810';
-  ctx.fillRect(0, 0, w, h);
-
-  // Wire-mesh grid lines
-  const gridCol  = isLight ? 'rgba(0,60,140,.18)' : 'rgba(0,212,255,.13)';
-  const gridBold = isLight ? 'rgba(0,60,140,.35)' : 'rgba(0,212,255,.30)';
-  ctx.lineWidth = 0.5;
-
-  // Every 30° longitude
-  for (let lon = -180; lon <= 180; lon += 30) {
-    const {x} = _mxy(lon, 0, w, h);
-    ctx.strokeStyle = (lon === 0) ? gridBold : gridCol;
-    ctx.lineWidth   = (lon === 0) ? 1 : 0.5;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-  }
-  // Every 30° latitude
-  for (let lat = -60; lat <= 80; lat += 30) {
-    const {y} = _mxy(0, lat, w, h);
-    ctx.strokeStyle = (lat === 0) ? gridBold : gridCol;
-    ctx.lineWidth   = (lat === 0) ? 1 : 0.5;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-  }
-  // Extra 15° grid for denser mesh feel
-  ctx.strokeStyle = isLight ? 'rgba(0,60,140,.07)' : 'rgba(0,212,255,.05)';
-  ctx.lineWidth = 0.3;
-  for (let lon = -180; lon <= 180; lon += 15) {
-    if (lon % 30 === 0) continue;
-    const {x} = _mxy(lon, 0, w, h);
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-  }
-  for (let lat = -45; lat <= 75; lat += 15) {
-    if (lat % 30 === 0) continue;
-    const {y} = _mxy(0, lat, w, h);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-  }
-
-  // Lat/lon labels
-  const labelCol = isLight ? 'rgba(0,60,140,.4)' : 'rgba(0,212,255,.32)';
-  ctx.fillStyle = labelCol;
-  ctx.font = `${Math.max(7, Math.min(10, w/120))}px 'IBM Plex Mono',monospace`;
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'left';
-  for (let lat = -60; lat <= 80; lat += 30) {
-    if (lat === 0) continue;
-    const {y} = _mxy(0, lat, w, h);
-    ctx.fillText(`${lat > 0 ? '+' : ''}${lat}°`, 3, y + 2);
-  }
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  for (let lon = -180; lon <= 180; lon += 60) {
-    const {x} = _mxy(lon, 0, w, h);
-    ctx.fillText(`${lon}°`, x, h - 2);
-  }
-
-  // Event LEDs — aggregate by region
-  const showEvts = document.getElementById('map-show-events')?.checked !== false;
-  if (showEvts) {
-    const groups = {};
-    for (const ev of (allEvents || [])) {
-      const r = ev.region || 'Global';
-      if (!groups[r]) groups[r] = {c:0,h:0,m:0,l:0};
-      if (ev.severity === 'critical') groups[r].c++;
-      else if (ev.severity === 'high') groups[r].h++;
-      else if (ev.severity === 'moderate') groups[r].m++;
-      else groups[r].l++;
-    }
-    for (const [region, cnt] of Object.entries(groups)) {
-      const coords = REGION_MAP_COORDS[region];
-      if (!coords) continue;
-      const {x, y} = _mxy(coords[0], coords[1], w, h);
-      const total = cnt.c + cnt.h + cnt.m + cnt.l;
-      const topSev = cnt.c > 0 ? 'critical' : cnt.h > 0 ? 'high' : cnt.m > 0 ? 'moderate' : 'low';
-      const color  = COLORS[topSev];
-      const baseR  = Math.min(4 + Math.log1p(total) * 3.5, 20);
-      const r      = baseR * pulseScale;
-
-      // Outer glow ring
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-      grad.addColorStop(0,   color + 'bb');
-      grad.addColorStop(0.5, color + '44');
-      grad.addColorStop(1,   color + '00');
-      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI*2);
-      ctx.fillStyle = grad; ctx.fill();
-
-      // Core dot
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
-      ctx.fillStyle = color; ctx.fill();
-
-      // Count label
-      if (total > 0) {
-        const fs = Math.max(7, Math.min(11, r * 0.9));
-        ctx.font = `bold ${fs}px 'IBM Plex Mono',monospace`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#000'; ctx.fillText(total, x, y);
-      }
-
-      // Region abbreviation below dot
-      const abbr = REGION_ABBR_MAP[region] || region;
-      ctx.font = `${Math.max(7, Math.min(9, w/140))}px 'IBM Plex Mono',monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillStyle = color + 'cc';
-      ctx.fillText(abbr, x, y + r + 2);
-    }
-  }
-
-  // Flight dots
   const showFlts = document.getElementById('map-show-flights')?.checked !== false;
-  if (showFlts) {
-    for (const f of (window._lastFlights || [])) {
-      if (f.lon === null || f.lat === null) continue;
-      const p = _mxy(f.lon, f.lat, w, h);
-      ctx.globalAlpha = f.tag === 'military' ? 0.9 : f.tag === 'government' ? 0.75 : 0.2;
-      if (f.tag === 'military') {
-        // Small upward triangle
-        const sz = 3.5;
-        ctx.fillStyle = COLORS.critical;
-        ctx.beginPath();
-        ctx.moveTo(p.x,      p.y - sz);
-        ctx.lineTo(p.x + sz, p.y + sz);
-        ctx.lineTo(p.x - sz, p.y + sz);
-        ctx.closePath(); ctx.fill();
-      } else if (f.tag === 'government') {
-        ctx.fillStyle = COLORS.high;
-        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
-      } else {
-        ctx.fillStyle = COLORS.accent;
-        ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2); ctx.fill();
-      }
+  if (!showFlts) return;
+
+  // Map equirectangular coords → canvas pixels (matches _mxyPct)
+  const toCanvas = (lon, lat) => ({
+    x: (lon + 180) / 360 * w,
+    y: (90 - Math.max(-80, Math.min(85, lat))) / 170 * h,
+  });
+
+  for (const f of (window._lastFlights || [])) {
+    if (f.lon === null || f.lat === null) continue;
+    const p = toCanvas(f.lon, f.lat);
+    ctx.globalAlpha = f.tag === 'military' ? 0.9 : f.tag === 'government' ? 0.75 : 0.18;
+    if (f.tag === 'military') {
+      const sz = 3.5;
+      ctx.fillStyle = COLORS.critical;
+      ctx.beginPath();
+      ctx.moveTo(p.x,      p.y - sz);
+      ctx.lineTo(p.x + sz, p.y + sz);
+      ctx.lineTo(p.x - sz, p.y + sz);
+      ctx.closePath(); ctx.fill();
+    } else if (f.tag === 'government') {
+      ctx.fillStyle = COLORS.high;
+      ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+    } else {
+      ctx.fillStyle = COLORS.accent;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2); ctx.fill();
     }
-    ctx.globalAlpha = 1;
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Keep startMapAnimation as a no-op — CSS handles marker pulsing, no canvas loop needed
+function startMapAnimation() {
+  // Resize observer keeps canvas in sync with image
+  const img = document.getElementById('worldMapImg');
+  if (img && window.ResizeObserver) {
+    new ResizeObserver(() => {
+      if (document.getElementById('page-livemap')?.classList.contains('active')) {
+        _syncFlightCanvas();
+        renderMapMarkers();
+      }
+    }).observe(img);
   }
 }
 
@@ -2697,6 +2879,14 @@ const MILITARY_CALL_PREFIXES = [
   'WOLF','SNAKE','COBRA','TITAN','ATLAS','SIRIUS','BOXER','SPARTAN',
 ];
 const GOVT_CALL_PREFIXES = ['EXEC','EAM','VIP','VENUS','SHIELD','GOVT','ANGEL','FORCE ONE'];
+
+function filterFlightTable(query) {
+  const q = (query || '').trim().toLowerCase();
+  const rows = document.querySelectorAll('#flight-tbody tr');
+  rows.forEach(row => {
+    row.style.display = (!q || row.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
 
 function _tagFlight(callsign) {
   if (!callsign) return 'civilian';
@@ -2759,8 +2949,8 @@ async function refreshFlights() {
       }).join('') || '<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--muted);">No tagged aircraft detected</td></tr>';
     }
 
-    // Redraw map with new flight positions
-    drawWorldMap(Date.now()/1000);
+    // Redraw flight overlay with new positions
+    drawFlightsOnCanvas();
 
   } catch(e) {
     const msg = e.name === 'TimeoutError' ? 'Request timed out (18s)' : escHtml(e.message);

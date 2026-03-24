@@ -69,8 +69,9 @@ def _run_api():
             host="127.0.0.1",
             port=8000,
             log_level="warning",
-            workers=1,
             loop="asyncio",
+            # workers omitted — avoids multiprocessing.spawn re-executing
+            # the PyInstaller bundle as a child, which re-runs launcher
         )
     except Exception as exc:
         log.error("API server crashed: %s", exc)
@@ -212,7 +213,71 @@ def _trigger_pull() -> bool:
         return False
 
 
+_browser_opened = False
+
+def _open_dashboard(url: str) -> None:
+    """Open the dashboard URL, reusing an existing localhost:5001 tab if possible.
+    On macOS, tries Chrome then Safari via AppleScript before falling back to open.
+    Guards against opening more than once per process lifetime."""
+    global _browser_opened
+    if _browser_opened:
+        return
+    _browser_opened = True
+
+    if sys.platform != 'darwin':
+        webbrowser.open(url, new=0)
+        return
+
+    script = (
+        'set u to "' + url + '"\n'
+        'set did_open to false\n'
+        'try\n'
+        '  tell application "Google Chrome"\n'
+        '    if it is running then\n'
+        '      repeat with w in windows\n'
+        '        repeat with t in tabs of w\n'
+        '          if (URL of t) starts with "http://localhost:5001" then\n'
+        '            set URL of t to u\n'
+        '            set active tab index of w to (tab index of t)\n'
+        '            tell w to activate\n'
+        '            set did_open to true\n'
+        '            exit repeat\n'
+        '          end if\n'
+        '        end repeat\n'
+        '        if did_open then exit repeat\n'
+        '      end repeat\n'
+        '    end if\n'
+        '  end tell\n'
+        'end try\n'
+        'if not did_open then try\n'
+        '  tell application "Safari"\n'
+        '    if it is running then\n'
+        '      repeat with w in windows\n'
+        '        repeat with t in tabs of w\n'
+        '          if (URL of t) starts with "http://localhost:5001" then\n'
+        '            set URL of t to u\n'
+        '            set current tab of w to t\n'
+        '            tell w to activate\n'
+        '            set did_open to true\n'
+        '            exit repeat\n'
+        '          end if\n'
+        '        end repeat\n'
+        '        if did_open then exit repeat\n'
+        '      end repeat\n'
+        '    end if\n'
+        '  end tell\n'
+        'end try\n'
+        'if not did_open then do shell script "open " & quoted form of u\n'
+    )
+    try:
+        subprocess.run(['osascript', '-e', script], timeout=8, capture_output=True)
+    except Exception:
+        webbrowser.open(url, new=0)
+
+
 def main():
+    import multiprocessing
+    multiprocessing.freeze_support()  # no-op outside frozen bundle; prevents re-entry on spawn
     log.info("AEGLOS Analytics Pro starting…")
 
     # Start Ollama before the API so convergence engine can find it
@@ -237,7 +302,7 @@ def main():
         if status.get("model_present"):
             # Model already downloaded — go straight to dashboard
             _notify("AEGLOS Analytics Pro", "Intelligence platform is live")
-            webbrowser.open("http://localhost:5001/geothreat")
+            _open_dashboard("http://localhost:5001/geothreat")
         elif status.get("process_running"):
             # First run: trigger auto-pull and open setup screen
             log.info("First run detected — triggering Qwen model download")
@@ -246,12 +311,12 @@ def main():
                 "AEGLOS Analytics Pro",
                 "First run: downloading AI model (~4.7 GB)…",
             )
-            webbrowser.open("http://localhost:5001/setup")
+            _open_dashboard("http://localhost:5001/setup")
         else:
             # Ollama not running (binary missing etc.) — open dashboard anyway,
             # intelligence feeds work without the model
             _notify("AEGLOS Analytics Pro", "Intelligence platform is live (AI engine offline)")
-            webbrowser.open("http://localhost:5001/geothreat")
+            _open_dashboard("http://localhost:5001/geothreat")
 
     threading.Thread(target=_on_ready, daemon=True).start()
 
