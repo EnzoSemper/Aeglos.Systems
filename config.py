@@ -242,24 +242,48 @@ class Settings:
     }
 
     # Severity keyword mapping
-    # critical = confirmed armed actions, new active threats
-    # high     = military/government movements, open conflict
+    # critical = confirmed armed actions, verified casualties, active armed threats
+    # high     = military/government movements, open conflict, significant incidents
     # moderate = geopolitical/economic tensions, extremist rhetoric
     # low      = minor criminal activity, small-scale incidents
+    #
+    # Keyword discipline:
+    # - CRITICAL terms must be specific to armed conflict or mass-casualty events.
+    #   Generic words that appear in accident/health/energy reporting ("nuclear",
+    #   "explosion", "executed", "coup") are intentionally absent or replaced with
+    #   conflict-specific phrases. These belong in HIGH at most.
+    # - All single-word keywords use whole-word (\b) matching — see _kw_match().
+    # - Multi-word phrases use substring matching — keep them specific.
     SEVERITY_KEYWORDS = {
         "critical": [
-            "killed", "kill", "kills", "killing", "casualties", "dead", "death toll", "wounded",
-            "bombing", "bombed", "explosion", "exploded", "missile strike", "airstrike", "airstrikes",
-            "rocket attack", "strikes kill", "attack kills",
-            "invasion", "invaded", "occupied", "offensive launched", "ground assault",
-            "coup", "assassinat", "assassinated", "executed",
-            "nuclear", "chemical weapon", "biological weapon", "dirty bomb",
-            "mass destruction", "wmd",
-            "terrorist attack", "suicide bomb", "car bomb", "hostage",
-            "genocide", "massacre", "ethnic cleansing", "civil war",
-            "armed attack", "confirmed strike", "active shooter",
-            "dead in", "people dead", "people killed", "people wounded",
+            # Confirmed casualties — specific to armed/mass-casualty contexts
+            "killed in attack", "killed in strike", "killed in airstrike",
+            "killed in bombing", "killed in explosion", "killed in shelling",
+            "civilians killed", "soldiers killed", "troops killed",
+            "casualties reported", "death toll rises", "death toll climbs",
+            "people killed", "people dead", "people wounded",
+            "dead in", "mass casualties", "mass casualty",
+            # Confirmed kinetic actions
+            "airstrike", "airstrikes", "missile strike", "missile strikes",
+            "rocket attack", "rocket attacks", "mortar attack",
+            "bombing", "bombed", "bombing kills", "suicide bombing",
+            "car bomb", "suicide bomb", "roadside bomb", "ied attack",
             "drone strike", "drone attack", "drone strikes",
+            "ground assault", "offensive launched", "armed assault",
+            "strikes kill", "attack kills", "shelling kills",
+            # Political violence / state collapse
+            "assassination", "assassinated",
+            "coup attempt", "military coup", "government overthrown",
+            "ethnic cleansing", "genocide", "massacre",
+            "civil war erupts", "civil war breaks out",
+            # WMD — specific phrases only (not standalone "nuclear")
+            "nuclear strike", "nuclear attack", "nuclear detonation",
+            "nuclear warhead", "nuclear test", "nuclear bomb",
+            "chemical attack", "chemical weapon", "biological weapon",
+            "dirty bomb", "mass destruction", "wmd",
+            # Terrorism
+            "terrorist attack", "active shooter", "hostage situation",
+            "armed attack", "confirmed attack",
         ],
         "high": [
             "military operation", "troops deployed", "forces mobilized",
@@ -274,8 +298,13 @@ class Settings:
             "nuclear program", "ballistic missile", "hypersonic",
             "escalation", "incursion", "border crossing", "aggression",
             "nato alert", "defense readiness",
-            "military strike", "strikes", "bombing campaign",
-            "attacks", "attack on", "assault on", "drones attack",
+            "military strike", "bombing campaign",
+            "attack on", "assault on", "drones attack",
+            # Demoted from critical — significant but not always armed conflict
+            "explosion", "exploded",
+            "killed", "casualties", "wounded", "dead",
+            "hostage", "civil war",
+            "coup",
         ],
         "moderate": [
             "oil price", "gas price", "fuel price", "energy crisis",

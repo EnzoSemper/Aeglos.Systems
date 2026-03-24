@@ -197,12 +197,39 @@ _CONF_BANDS: dict[str, tuple[float, float]] = {
     "search":     (0.10, 0.35),   # BlueSky keyword search results
 }
 
-# Minimum banded confidence required to retain a severity label.
-# Prevents a single ambiguous keyword match on a social/osint source
-# from surfacing as CRITICAL or HIGH. Severity is downgraded if unmet.
-_SEVERITY_MIN_CONF: dict[str, float] = {
-    "critical": 0.45,
-    "high":     0.35,
+# Minimum banded confidence required to retain a severity label, per source category.
+#
+# Why per-category floors matter:
+#
+#   news/analysis sources band to 0.42–0.68. One keyword match produces
+#   raw_conf=0.58 → banded=0.57. With a 0.45 floor that previously passed as
+#   CRITICAL. Raising to 0.58 means 1 keyword → 0.57 → fails → HIGH, while
+#   2 keywords → raw=0.66 → banded=0.59 → passes → CRITICAL.
+#
+#   government sources band to 0.72–0.97. One keyword match produces
+#   banded=0.865, which already exceeds a 0.58 floor. Genuine single-keyword
+#   signals from DoD/UN are retained as CRITICAL; the keyword-list tightening
+#   in config.py prevents false triggers on "nuclear energy" or "executed warrant".
+#
+#   osint/search are already capped at 0.40/0.35 by their band ceiling, so the
+#   floor is effectively irrelevant — they can never reach 0.58 regardless.
+_SEVERITY_MIN_CONF: dict[str, dict[str, float]] = {
+    "critical": {
+        "government": 0.58,   # 1 specific keyword still sufficient (bands to 0.865)
+        "news":       0.58,   # 2 keywords required (1 match bands to 0.57 — fails)
+        "analysis":   0.58,   # same as news
+        "osint":      0.45,   # band ceiling 0.40 — floor is moot; kept for reference
+        "search":     0.40,
+        "_default":   0.58,
+    },
+    "high": {
+        "government": 0.42,
+        "news":       0.42,
+        "analysis":   0.42,
+        "osint":      0.30,
+        "search":     0.25,
+        "_default":   0.42,
+    },
 }
 
 
@@ -212,14 +239,18 @@ def _apply_confidence_band(raw_conf: float, category: str) -> float:
     return round(lo + raw_conf * (hi - lo), 4)
 
 
-def _enforce_severity_floor(severity: str, confidence: float) -> str:
+def _enforce_severity_floor(severity: str, confidence: float, category: str = "_default") -> str:
     """
-    Downgrade severity if banded confidence is below the minimum required
-    for that label. Prevents low-confidence social posts from surfacing as
-    CRITICAL or HIGH on a single keyword match.
+    Downgrade severity if banded confidence is below the minimum required for
+    that label and source category. Single-keyword matches from news/analysis
+    sources produce banded confidence of ~0.57, which now falls below the 0.58
+    CRITICAL floor and is correctly downgraded to HIGH.
     """
-    min_conf = _SEVERITY_MIN_CONF.get(severity)
-    if min_conf is not None and confidence < min_conf:
+    tier = _SEVERITY_MIN_CONF.get(severity)
+    if tier is None:
+        return severity
+    min_conf = tier.get(category, tier["_default"])
+    if confidence < min_conf:
         return "high" if severity == "critical" else "moderate"
     return severity
 
@@ -259,7 +290,7 @@ def _parse_feed_entries(
         region, kw_region = _classify_region(combined_en, region_hint)
         severity, raw_conf = _classify_severity(combined_en)
         confidence = _apply_confidence_band(raw_conf, source_cfg["category"])
-        severity = _enforce_severity_floor(severity, confidence)
+        severity = _enforce_severity_floor(severity, confidence, source_cfg["category"])
 
         # Store the English title; keep original in description for reference
         display_title = title_en if title_en != title else title
@@ -409,7 +440,7 @@ class GeoThreatPipeline:
         severity, raw_conf = _classify_severity(text_en)
         category = post.get("category", "search")
         confidence = _apply_confidence_band(raw_conf, category)
-        severity = _enforce_severity_floor(severity, confidence)
+        severity = _enforce_severity_floor(severity, confidence, category)
         source_label = f"BlueSky/{post['handle']}"
         return GeoThreatEvent(
             source=source_label,
