@@ -987,6 +987,19 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono','Courier
 <script src="/static/geothreat-live.js"></script>
 <script>
 // ── Navigation ────────────────────────────────────────────────────────────────
+// Persist active page across poll-driven re-renders
+function _saveActivePage(pageKey) {
+  try { sessionStorage.setItem('aeglos-page', pageKey); } catch {}
+}
+function _getActivePage() {
+  try { return sessionStorage.getItem('aeglos-page') || 'overview'; } catch { return 'overview'; }
+}
+function _restoreActivePage() {
+  const key = _getActivePage();
+  const navItem = document.querySelector(`.nav-item[data-page="${key}"]`);
+  if (navItem) navItem.click();
+}
+
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -995,7 +1008,9 @@ document.querySelectorAll('.nav-item').forEach(item => {
     const page = document.getElementById('page-' + item.dataset.page);
     if (page) {
       page.classList.add('active');
-      if (item.dataset.page === 'livemap')  { drawWorldMap(Date.now()/1000); }
+      _saveActivePage(item.dataset.page);
+      // Defer map draw until browser has laid out the newly-visible canvas
+      if (item.dataset.page === 'livemap')  { requestAnimationFrame(() => drawWorldMap(Date.now()/1000)); }
       if (item.dataset.page === 'regional') { initRegionalPills(); renderRegionalDrilldown(); }
     }
   });
@@ -2528,10 +2543,11 @@ function startMapAnimation() {
 function drawWorldMap(timeSec) {
   const canvas = document.getElementById('worldMapCanvas');
   if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  const w = Math.floor(rect.width);
-  const h = Math.floor(rect.height);
-  if (!w || !h) return;
+  // getBoundingClientRect can return 0 for a just-shown element before browser layout;
+  // fall back to offsetWidth/parentElement as safety net
+  let w = Math.floor(canvas.getBoundingClientRect().width) || canvas.offsetWidth || (canvas.parentElement?.offsetWidth ?? 0);
+  let h = Math.floor(canvas.getBoundingClientRect().height) || canvas.offsetHeight || Math.floor(w / 2);
+  if (!w || !h) { requestAnimationFrame(() => drawWorldMap(timeSec)); return; }
   if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
   const ctx = canvas.getContext('2d');
   const isLight = currentTheme === 'light';
@@ -2961,8 +2977,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePFBadge();
   renderPersonalFeed();
   _initAiEngine();
-  initRegionalPills();
   startMapAnimation();
+  // Restore whichever page was active before the last poll cycle
+  _restoreActivePage();
 });
 </script>
 </body>
